@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.24</title>
+    <title>Monitoring Upkeep v2.25</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -112,7 +112,6 @@
     const db = firebase.firestore();
     let currentTab = "Planning";
 
-    // Helper: Format Tanggal ke DD/MM/YYYY
     function formatTglIndo(isoDate) {
         if(!isoDate) return "-";
         const [y, m, d] = isoDate.split("-");
@@ -263,28 +262,26 @@
         await batch.commit(); switchTab('Hasil'); alert("Tersalin!");
     }
 
-    // PERBAIKAN: History dengan Filter Tipe dan Format Tanggal Indo
     async function prosesHistory() {
         const start = document.getElementById('rekapMulai').value;
         const end = document.getElementById('rekapSelesai').value;
         const filter = document.querySelector('input[name="filterTipe"]:checked').value;
-        
         if(!start || !end) return alert("Pilih tanggal!");
         
-        let query = db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end);
-        
-        if(filter !== "SEMUA") {
-            query = query.where("type", "==", filter);
-        }
-
-        const q = await query.orderBy("tgl", "desc").get();
+        const q = await db.collection("reports_v13")
+                        .where("tgl", ">=", start)
+                        .where("tgl", "<=", end)
+                        .orderBy("tgl", "desc").get();
         let html = "";
+        let dataAda = false;
         
         if(q.empty) {
             html = "<center style='padding:20px;'>Data tidak ditemukan.</center>";
         } else {
             q.forEach(doc => {
                 const d = doc.data();
+                if(filter !== "SEMUA" && d.type !== filter) return;
+                dataAda = true;
                 const badgeColor = d.type === "Planning" ? "#3b82f6" : "#22c55e";
                 html += `<div style="border-left:5px solid ${badgeColor}; background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
@@ -296,6 +293,7 @@
                     👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
                 </div>`;
             });
+            if(!dataAda) html = `<center style='padding:20px;'>Data ${filter} tidak ditemukan.</center>`;
         }
         document.getElementById('hasilRekap').innerHTML = html;
     }
