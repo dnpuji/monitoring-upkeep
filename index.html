@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.19 - Sihar</title>
+    <title>Monitoring Upkeep v2.21</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #2d5a27; --accent: #6b8e23; --bg: #f8fafc; --text: #334155; --danger: #ef4444; }
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); font-size: 13px; padding-bottom: 120px; }
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); font-size: 13px; padding-bottom: 100px; }
         .header { background: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary); }
         .tab-menu { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #e2e8f0; font-weight: 600; color: #64748b; }
@@ -22,10 +22,9 @@
         .acc-main-row { display: flex; align-items: center; background: #eef2f7; border-bottom: 1px solid #e2e8f0; }
         .acc-header { flex: 1; padding: 15px; font-weight: 800; color: #0f172a; cursor: pointer; }
         .order-controls { display: flex; gap: 5px; padding-right: 12px; }
-        .btn-order { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--primary); }
+        .btn-order { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--primary); font-weight: bold; }
         .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; }
         .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
-        .summary-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
     </style>
 </head>
@@ -112,21 +111,15 @@
         if(t !== 'Rekap') { document.getElementById('formTitle').innerText = "Input " + t; loadData(); }
     }
 
-    // FIX: Fungsi Hapus Total Berfungsi Kembali
     async function hapusSemuaHariIni() {
         const tgl = document.getElementById('tglLaporan').value;
-        if(confirm(`HAPUS TOTAL semua data ${currentTab} tanggal ${tgl}?`)) {
-            const q = await db.collection("reports_v13")
-                        .where("tgl", "==", tgl)
-                        .where("type", "==", currentTab)
-                        .get();
-            
-            if(q.empty) return alert("Tidak ada data untuk dihapus.");
-            
+        if(confirm(`HAPUS SEMUA data ${currentTab} tanggal ${tgl}?`)) {
+            const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get();
+            if(q.empty) return alert("Data kosong.");
             const batch = db.batch();
             q.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            alert("Berhasil dihapus!");
+            alert("Terhapus!");
         }
     }
 
@@ -134,8 +127,8 @@
         const div = document.createElement('div');
         div.className = 'row';
         div.innerHTML = (id === 'paddockContainer') 
-            ? `<input type="text" class="p-name" value="${valName}" placeholder="Pdk"><input type="number" class="p-luas" value="${valLuas}" placeholder="Ha"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`
-            : `<input type="text" class="b-name" value="${valName}" placeholder="Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`;
+            ? `<input type="text" class="p-name" value="${valName}" placeholder="📍 Pdk"><input type="number" class="p-luas" value="${valLuas}" placeholder="📐 Ha" step="0.01"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; padding:0 5px;">✕</button>`
+            : `<input type="text" class="b-name" value="${valName}" placeholder="🧪 Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; padding:0 5px;">✕</button>`;
         document.getElementById(id).appendChild(div);
     }
 
@@ -152,7 +145,8 @@
             const items = []; snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
             items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
             items.forEach(d => {
-                totalHK += d.hk; const sumL = d.paddocks.reduce((a, b) => a + b.luas, 0);
+                totalHK += (d.hk || 0); 
+                const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
                 listHtml += `<div class="acc-item" data-id="${d.id}">
                     <div class="acc-main-row">
                         <div class="acc-header" onclick="toggleAcc('${d.id}')">📝 ${d.kegiatan} (${sumL.toFixed(2)} Ha)</div>
@@ -162,11 +156,12 @@
                         </div>
                     </div>
                     <div class="acc-body" id="body-${d.id}">
-                        📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>
-                        👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}<br>
-                        ⚙️ Stat: 🟢${d.jln} | 🔴${d.rsk} | 🟡${d.std}<br>
+                        📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas || 0})`).join(", ")}<br>
+                        👷 HK: ${d.hk || 0} | 🚜 Alat: ${d.unit || "-"}<br>
+                        ⚙️ Stat: 🟢${d.jln || 0} | 🔴${d.rsk || 0} | 🟡${d.std || 0}<br>
                         🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
-                        <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:10px; font-weight:bold;">EDIT</button>
+                        ℹ️ Ket: ${d.ket || "-"}<br>
+                        <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:10px; font-weight:bold;">EDIT DATA</button>
                     </div>
                 </div>`;
             });
@@ -178,14 +173,14 @@
     async function simpanData(isUpdate) {
         const tgl = document.getElementById('tglLaporan').value;
         const paddocks = Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({
-            name: el.value, luas: parseFloat(document.querySelectorAll('.p-luas')[i].value || 0)
+            name: el.value, luas: parseFloat(document.querySelectorAll('.p-luas')[i].value) || 0
         })).filter(p => p.name !== "");
         const bahans = Array.from(document.querySelectorAll('.b-name')).map(el => el.value).filter(b => b !== "");
         const payload = {
             tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
-            paddocks, bahans, hk: parseInt(document.getElementById('hk').value || 0),
-            unit: document.getElementById('unit').value, jln: document.getElementById('jln').value || 0,
-            rsk: document.getElementById('rsk').value || 0, std: document.getElementById('std').value || 0,
+            paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
+            unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
+            rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
             ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         if(!payload.kegiatan) return alert("Isi Kegiatan!");
@@ -194,45 +189,44 @@
         clearForm();
     }
 
-    async function prosesHistory() {
-        const start = document.getElementById('rekapMulai').value;
-        const end = document.getElementById('rekapSelesai').value;
-        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
-        let pdkTotals = {}; let grandHK = 0; let html = "";
-        q.forEach(doc => {
-            const d = doc.data(); grandHK += d.hk;
-            d.paddocks.forEach(p => { pdkTotals[p.name] = (pdkTotals[p.name] || 0) + p.luas; });
-            html += `<div style="border-left:5px solid var(--primary); background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                <b>📅 ${d.tgl} (${d.type})</b><br><span style="color:var(--primary); font-weight:800;">📝 ${d.kegiatan}</span><br>📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>👷 HK: ${d.hk}</div>`;
-        });
-        document.getElementById('hasilRekap').innerHTML = html;
-    }
-
+    // UPDATE: WA dengan Total HK dan Link
     function salinWA() {
         const tgl = document.getElementById('tglLaporan').value;
+        const items = document.querySelectorAll('.acc-item');
+        if(items.length === 0) return alert("Data kosong.");
+        
+        let totalHK_Semua = 0;
         let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${tgl}\n--------------------------\n`;
-        document.querySelectorAll('.acc-item').forEach((el, i) => {
-            text += `\n*${i+1}. ${el.querySelector('.acc-header').innerText.toUpperCase()}*\n${el.querySelector('.acc-body').innerText.replace("EDIT", "")}\n`;
+        
+        items.forEach((el, i) => {
+            const header = el.querySelector('.acc-header').innerText;
+            const body = el.querySelector('.acc-body').innerText.split("EDIT DATA")[0].trim();
+            
+            // Hitung HK dari tampilan untuk total akhir
+            const hkMatch = body.match(/HK: (\d+)/);
+            if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
+            
+            text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
         });
-        navigator.clipboard.writeText(text); alert("WA Disalin!");
+        
+        text += `\n--------------------------\n`;
+        text += `*TOTAL HK: ${totalHK_Semua} 👷*\n`;
+        text += `\n*Link Monitoring:* https://siharbatara.github.io/upkeep/`;
+        
+        navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
     }
 
-    async function copyPlanningToHasil() {
-        const tgl = document.getElementById('tglLaporan').value;
-        const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
-        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; db.collection("reports_v13").add(d); });
-        switchTab('Hasil');
-    }
-
-    function downloadCSV() {
-        const tgl = document.getElementById('tglLaporan').value;
-        let csv = "Kegiatan,Paddock,Luas,HK,Unit,Ready,Breakdown,Standby,Bahan,Keterangan\n";
-        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(snap => {
-            snap.forEach(doc => {
-                const d = doc.data();
-                csv += `"${d.kegiatan}","${d.paddocks.map(p=>p.name).join(";")}","${d.paddocks.reduce((a,b)=>a+b.luas,0)}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.bahans.join(";")}","${d.ket}"\n`;
-            });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `Backup_${tgl}.csv`; a.click();
+    function tarikKeForm(id) {
+        db.collection("reports_v13").doc(id).get().then(doc => {
+            const d = doc.data(); document.getElementById('editId').value = id;
+            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk;
+            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln;
+            document.getElementById('rsk').value = d.rsk; document.getElementById('std').value = d.std;
+            document.getElementById('ket').value = d.ket; document.getElementById('paddockContainer').innerHTML = "";
+            d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
+            document.getElementById('bahanContainer').innerHTML = "";
+            d.bahans.forEach(b => addRow('bahanContainer', b));
+            document.getElementById('btnUpdate').style.display = "block"; window.scrollTo(0,0);
         });
     }
 
@@ -247,17 +241,37 @@
         document.getElementById('btnUpdate').style.display = "none";
     }
 
-    function tarikKeForm(id) {
-        db.collection("reports_v13").doc(id).get().then(doc => {
-            const d = doc.data(); document.getElementById('editId').value = id;
-            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk;
-            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln;
-            document.getElementById('rsk').value = d.rsk; document.getElementById('std').value = d.std;
-            document.getElementById('ket').value = d.ket; document.getElementById('paddockContainer').innerHTML = "";
-            d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
-            document.getElementById('bahanContainer').innerHTML = "";
-            d.bahans.forEach(b => addRow('bahanContainer', b));
-            document.getElementById('btnUpdate').style.display = "block"; window.scrollTo(0,0);
+    async function copyPlanningToHasil() {
+        const tgl = document.getElementById('tglLaporan').value;
+        const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
+        const batch = db.batch();
+        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; batch.set(db.collection("reports_v13").doc(), d); });
+        await batch.commit(); switchTab('Hasil'); alert("Tersalin!");
+    }
+
+    async function prosesHistory() {
+        const start = document.getElementById('rekapMulai').value;
+        const end = document.getElementById('rekapSelesai').value;
+        if(!start || !end) return alert("Pilih tanggal!");
+        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
+        let html = "";
+        q.forEach(doc => {
+            const d = doc.data();
+            html += `<div style="border-left:5px solid var(--primary); background:white; padding:12px; border-radius:10px; margin-bottom:10px;">
+                <b>📅 ${d.tgl} [${d.type}]</b><br>📝 ${d.kegiatan}<br>📍 Pdk: ${d.paddocks.map(p => p.name).join(", ")}<br>👷 HK: ${d.hk}</div>`;
+        });
+        document.getElementById('hasilRekap').innerHTML = html || "Tidak ada data.";
+    }
+
+    function downloadCSV() {
+        const tgl = document.getElementById('tglLaporan').value;
+        let csv = "Kegiatan,Paddock,Luas,HK,Unit,Ready,Breakdown,Standby,Bahan,Keterangan\n";
+        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(snap => {
+            snap.forEach(doc => {
+                const d = doc.data();
+                csv += `"${d.kegiatan}","${d.paddocks.map(p=>p.name).join(";")}","${d.paddocks.reduce((a,b)=>a+b.luas,0)}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.bahans.join(";")}","${d.ket}"\n`;
+            });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `Upkeep_${tgl}.csv`; a.click();
         });
     }
 
