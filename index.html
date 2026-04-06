@@ -3,92 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.0 - Sihar</title>
+    <title>Monitoring Upkeep v2.3 - Sihar</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --primary: #1a5d1a; --secondary: #f29727; --bg: #f0f2f5; }
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: var(--bg); font-size: 14px; }
-        .header { background: var(--primary); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 10px; }
+        :root { --primary: #1a5d1a; --secondary: #f29727; --bg: #f0f2f5; --danger: #dc3545; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 10px; background: var(--bg); font-size: 14px; padding-bottom: 80px; }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .tab-menu { display: flex; gap: 5px; margin-bottom: 10px; }
-        .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 5px; cursor: pointer; background: #ccc; font-weight: bold; }
+        .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 5px; cursor: pointer; background: #ccc; font-weight: bold; transition: 0.3s; }
         .tab-menu button.active { background: var(--secondary); color: white; }
         
-        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .input-group { border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #fafafa; }
-        .row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
-        input, textarea, select { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-add { background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; }
-        .btn-remove { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 4px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 10px; border-top: 4px solid var(--primary); }
+        .row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        input, textarea { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         
-        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 10px; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 10px 0; }
-        .btn-action { padding: 10px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-add-row { background: #f0fdf4; color: #166534; border: 1px dashed #166534; padding: 8px; border-radius: 5px; width: 100%; margin-bottom: 10px; font-weight: bold; cursor: pointer; }
+        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor: pointer; }
+        
+        /* Tombol Reset vs Hapus */
+        .btn-reset-form { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-delete-db { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
-        /* Accordion Style */
-        .item-list { margin-top: 15px; }
-        .acc-item { background: white; margin-bottom: 5px; border-radius: 5px; overflow: hidden; border: 1px solid #ddd; }
-        .acc-header { padding: 10px; background: #fff; display: flex; justify-content: space-between; cursor: pointer; font-weight: bold; }
-        .acc-body { padding: 10px; display: none; border-top: 1px solid #eee; background: #fdfdfd; }
-        .summary-box { background: #fff3cd; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; text-align: center; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
+        .btn-action { padding: 12px; border: none; border-radius: 6px; color: white; font-weight: bold; font-size: 12px; cursor: pointer; }
+
+        .acc-item { background: white; margin-bottom: 8px; border-radius: 8px; border: 1px solid #ddd; overflow: hidden; }
+        .acc-header { padding: 12px; display: flex; justify-content: space-between; cursor: pointer; font-weight: bold; background: #fff; }
+        .acc-body { padding: 12px; display: none; border-top: 1px solid #eee; background: #fafafa; line-height: 1.6; }
+        .summary-box { background: #fff3cd; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-align: center; border: 1px solid #ffe082; color: #856404; }
+        
+        .btn-edit { background: var(--secondary); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="header"><h3>Monitoring Upkeep & Manuring</h3></div>
+<div class="header">
+    <h3 style="margin:0">Monitoring Upkeep & Manuring</h3>
+    <small>v2.3 - Sihar Batara Guna (Merauke)</small>
+</div>
 
 <div class="tab-menu">
     <button id="tabPlanning" class="active" onclick="switchTab('Planning')">PLANNING</button>
     <button id="tabHasil" onclick="switchTab('Hasil')">HASIL KERJA</button>
 </div>
 
-<div class="summary-box" id="dailySummary">Total Luas: 0 Ha | Total HK: 0</div>
+<div class="card">
+    <label><b>📅 Tanggal Laporan:</b></label>
+    <input type="date" id="tglLaporan" onchange="loadData()">
+</div>
 
-<div id="formSection" class="card">
-    <b id="formTitle">Tambah Kegiatan Planning</b>
-    <input type="text" id="kegiatan" placeholder="Nama Kegiatan (ex: Manuring)">
+<div class="summary-box" id="dailySummary">Memuat data...</div>
+
+<div class="card" id="inputForm">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <b id="formTitle" style="color:var(--primary)">Input Planning</b>
+        <button class="btn-reset-form" onclick="resetForm()">🔄 Reset Form</button>
+    </div>
     
-    <label style="display:block; margin-top:10px;"><b>Paddock & Luas:</b></label>
+    <input type="hidden" id="editId">
+    <input type="text" id="kegiatan" placeholder="Nama Kegiatan (Contoh: Manuring)">
+    
     <div id="paddockContainer">
         <div class="row">
             <input type="text" class="p-name" placeholder="Paddock">
-            <input type="number" class="p-luas" placeholder="Luas (Ha)" step="0.01">
+            <input type="number" class="p-luas" placeholder="Ha" step="0.01">
         </div>
     </div>
-    <button class="btn-add" onclick="addRow('paddockContainer')">+ Paddock</button>
+    <button class="btn-add-row" onclick="addRow('paddockContainer')">+ Tambah Paddock & Luas</button>
 
     <div class="row">
-        <input type="number" id="hk" placeholder="Jumlah HK">
+        <input type="number" id="hk" placeholder="Jml HK">
         <input type="text" id="unit" placeholder="Unit/Alat">
     </div>
 
-    <label><b>Bahan:</b></label>
     <div id="bahanContainer">
         <div class="row"><input type="text" class="b-name" placeholder="Nama Bahan"></div>
     </div>
-    <button class="btn-add" onclick="addRow('bahanContainer')">+ Bahan</button>
+    <button class="btn-add-row" onclick="addRow('bahanContainer')">+ Tambah Bahan</button>
 
     <div class="row">
-        <input type="number" id="jln" placeholder="Jln">
-        <input type="number" id="rsk" placeholder="Rsk">
-        <input type="number" id="std" placeholder="Std">
+        <input type="number" id="jln" placeholder="Jln" value="0">
+        <input type="number" id="rsk" placeholder="Rsk" value="0">
+        <input type="number" id="std" placeholder="Std" value="0">
     </div>
-    <textarea id="ket" placeholder="Keterangan..."></textarea>
+    <textarea id="ket" placeholder="Keterangan tambahan..."></textarea>
     
-    <button class="btn-main" onclick="simpanKeFirebase()">SIMPAN KEGIATAN</button>
+    <button class="btn-main" onclick="simpanData()">💾 SIMPAN / UPDATE KE FIREBASE</button>
 </div>
 
 <div class="action-grid">
-    <button class="btn-action" style="background:#25d366" onclick="salinWA()">Salin WA</button>
-    <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">Download CSV</button>
-    <button class="btn-action" style="background:#333" onclick="hapusSemua()">Hapus Total</button>
-    <button class="btn-action" style="background:#6c757d" onclick="copyPlanningToHasil()">Copy Planning ke Hasil</button>
+    <button class="btn-action" style="background:#25d366" onclick="salinWA()">🟢 Salin ke WA</button>
+    <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">🔵 Download CSV</button>
+    <button class="btn-action" style="background:#6c757d" onclick="copyPlanningToHasil()">🔘 Salin ke Hasil</button>
+    <button class="btn-delete-db" onclick="hapusSemua()">⚠️ HAPUS DATA DATABASE</button>
 </div>
 
-<div id="displayList" class="item-list"></div>
+<div id="displayList"></div>
 
 <script>
-    // KONFIGURASI FIREBASE (Sesuai Gambar Kamu)
+    // Konfigurasi Firebase dari gambar kamu
     const firebaseConfig = {
         apiKey: "AIzaSyAgxUFI0NSD-7Ka8ZxFJwkupR6rgb_i00w",
         authDomain: "monitoring-upkeep.firebaseapp.com",
@@ -102,83 +116,138 @@
     const db = firebase.firestore();
     let currentTab = "Planning";
 
+    // Default tanggal hari ini
+    document.getElementById('tglLaporan').valueAsDate = new Date();
+
     function switchTab(t) {
         currentTab = t;
         document.getElementById('tabPlanning').className = (t==='Planning')?'active':'';
         document.getElementById('tabHasil').className = (t==='Hasil')?'active':'';
-        document.getElementById('formTitle').innerText = "Tambah Kegiatan " + t;
+        document.getElementById('formTitle').innerText = "Input " + t;
         loadData();
     }
 
-    function addRow(containerId) {
+    function addRow(id, valName="", valLuas=0) {
         const div = document.createElement('div');
         div.className = 'row';
-        if(containerId === 'paddockContainer') {
-            div.innerHTML = `<input type="text" class="p-name" placeholder="Paddock">
-                             <input type="number" class="p-luas" placeholder="Luas" step="0.01">
-                             <button class="btn-remove" onclick="this.parentElement.remove()">X</button>`;
+        if(id === 'paddockContainer') {
+            div.innerHTML = `<input type="text" class="p-name" value="${valName}" placeholder="Paddock"><input type="number" class="p-luas" value="${valLuas}" placeholder="Ha" step="0.01"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:18px; cursor:pointer;">✕</button>`;
         } else {
-            div.innerHTML = `<input type="text" class="b-name" placeholder="Nama Bahan">
-                             <button class="btn-remove" onclick="this.parentElement.remove()">X</button>`;
+            div.innerHTML = `<input type="text" class="b-name" value="${valName}" placeholder="Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; font-size:18px; cursor:pointer;">✕</button>`;
         }
-        document.getElementById(containerId).appendChild(div);
+        document.getElementById(id).appendChild(div);
     }
 
-    async function simpanKeFirebase() {
+    // RESET HANYA DI FORM (WEB)
+    function resetForm() {
+        if(confirm("Bersihkan ketikan di form? (Data di database tetap aman)")) {
+            document.getElementById('editId').value = "";
+            document.getElementById('kegiatan').value = "";
+            document.getElementById('hk').value = "";
+            document.getElementById('unit').value = "";
+            document.getElementById('jln').value = "0";
+            document.getElementById('rsk').value = "0";
+            document.getElementById('std').value = "0";
+            document.getElementById('ket').value = "";
+            document.getElementById('paddockContainer').innerHTML = `<div class="row"><input type="text" class="p-name" placeholder="Paddock"><input type="number" class="p-luas" placeholder="Ha" step="0.01"></div>`;
+            document.getElementById('bahanContainer').innerHTML = `<div class="row"><input type="text" class="b-name" placeholder="Nama Bahan"></div>`;
+        }
+    }
+
+    async function simpanData() {
+        const tgl = document.getElementById('tglLaporan').value;
+        if(!tgl) return alert("Pilih tanggal laporan!");
+
         const paddocks = Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({
             name: el.value,
             luas: parseFloat(document.querySelectorAll('.p-luas')[i].value || 0)
-        }));
-        const bahans = Array.from(document.querySelectorAll('.b-name')).map(el => el.value);
+        })).filter(p => p.name !== "");
 
-        const data = {
+        const bahans = Array.from(document.querySelectorAll('.b-name')).map(el => el.value).filter(b => b !== "");
+
+        const payload = {
+            tgl: tgl,
             type: currentTab,
             kegiatan: document.getElementById('kegiatan').value,
-            paddocks: paddocks,
+            paddocks, bahans,
             hk: parseInt(document.getElementById('hk').value || 0),
             unit: document.getElementById('unit').value,
-            bahans: bahans,
             jln: document.getElementById('jln').value,
             rsk: document.getElementById('rsk').value,
             std: document.getElementById('std').value,
             ket: document.getElementById('ket').value,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
+        if(!payload.kegiatan) return alert("Nama kegiatan wajib diisi!");
+
+        const id = document.getElementById('editId').value;
         try {
-            await db.collection("daily_reports").add(data);
-            alert("Berhasil disimpan!");
-            location.reload(); 
-        } catch (e) { alert("Error: " + e); }
+            if(id) {
+                await db.collection("reports_v3").doc(id).update(payload);
+                alert("Data Berhasil Diperbarui!");
+            } else {
+                await db.collection("reports_v3").add(payload);
+                alert("Data Berhasil Disimpan ke Firebase!");
+            }
+        } catch (e) { alert("Gagal Simpan: " + e); }
+        loadData();
     }
 
     function loadData() {
-        db.collection("daily_reports").where("type", "==", currentTab).orderBy("createdAt", "desc")
+        const tgl = document.getElementById('tglLaporan').value;
+        db.collection("reports_v3").where("tgl", "==", tgl).where("type", "==", currentTab)
         .onSnapshot(snap => {
             let html = "";
             let tLuas = 0, tHK = 0;
             snap.forEach(doc => {
                 const d = doc.data();
-                const totalL = d.paddocks.reduce((s, p) => s + p.luas, 0);
-                tLuas += totalL; tHK += d.hk;
+                const sumL = d.paddocks.reduce((a, b) => a + b.luas, 0);
+                tLuas += sumL; tHK += d.hk;
 
                 html += `
                 <div class="acc-item">
                     <div class="acc-header" onclick="toggleAcc('${doc.id}')">
                         <span>${d.kegiatan}</span>
-                        <span>${totalL.toFixed(2)} Ha ▼</span>
+                        <span style="color:var(--primary)">${sumL.toFixed(2)} Ha ▼</span>
                     </div>
                     <div class="acc-body" id="body-${doc.id}">
-                        <b>Paddocks:</b> ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}<br>
-                        <b>Bahan:</b> ${d.bahans.join(", ")}<br>
-                        <b>Alat:</b> ${d.unit} (J:${d.jln} R:${d.rsk} S:${d.std})<br>
-                        <b>Ket:</b> ${d.ket}<br>
-                        <button class="btn-remove" onclick="hapusItem('${doc.id}')" style="width:100%; margin-top:10px;">Hapus Kegiatan</button>
+                        <b>📍 Paddock:</b> ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>
+                        <b>🧪 Bahan:</b> ${d.bahans.join(", ") || "-"}<br>
+                        <b>👷 HK:</b> ${d.hk} | <b>🚜 Alat:</b> ${d.unit}<br>
+                        <b>⚙️ Status:</b> Jln:${d.jln} Rsk:${d.rsk} Std:${d.std}<br>
+                        <b>📝 Ket:</b> ${d.ket || "-"}<br>
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-edit" onclick="tarikKeForm('${doc.id}')">✏️ EDIT</button>
+                            <button style="color:red; background:none; border:none; font-weight:bold; cursor:pointer;" onclick="hapusItem('${doc.id}')">🗑️ Hapus</button>
+                        </div>
                     </div>
                 </div>`;
             });
             document.getElementById('displayList').innerHTML = html;
-            document.getElementById('dailySummary').innerText = `Total Luas: ${tLuas.toFixed(2)} Ha | Total HK: ${tHK}`;
+            document.getElementById('dailySummary').innerHTML = `📊 REKAPAN: <b>${tLuas.toFixed(2)} Ha</b> | <b>${tHK} HK</b>`;
+        });
+    }
+
+    function tarikKeForm(id) {
+        db.collection("reports_v3").doc(id).get().then(doc => {
+            const d = doc.data();
+            document.getElementById('editId').value = id;
+            document.getElementById('kegiatan').value = d.kegiatan;
+            document.getElementById('hk').value = d.hk;
+            document.getElementById('unit').value = d.unit;
+            document.getElementById('jln').value = d.jln;
+            document.getElementById('rsk').value = d.rsk;
+            document.getElementById('std').value = d.std;
+            document.getElementById('ket').value = d.ket;
+            
+            document.getElementById('paddockContainer').innerHTML = "";
+            d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
+            
+            document.getElementById('bahanContainer').innerHTML = "";
+            d.bahans.forEach(b => addRow('bahanContainer', b));
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 
@@ -187,53 +256,84 @@
         el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 
-    async function hapusItem(id) {
-        if(confirm("Hapus item ini?")) await db.collection("daily_reports").doc(id).delete();
+    async function hapusItem(id) { 
+        if(confirm("Hapus kegiatan ini dari database permanen?")) await db.collection("reports_v3").doc(id).delete(); 
     }
 
     async function hapusSemua() {
-        if(confirm("Hapus SEMUA data di tab ini?")) {
-            const q = await db.collection("daily_reports").where("type", "==", currentTab).get();
-            q.forEach(doc => doc.ref.delete());
+        if(confirm("⚠️ PERINGATAN: Hapus SEMUA data tanggal ini dari DATABASE? Tindakan ini tidak bisa dibatalkan!")) {
+            const tgl = document.getElementById('tglLaporan').value;
+            const q = await db.collection("reports_v3").where("tgl", "==", tgl).where("type", "==", currentTab).get();
+            const batch = db.batch();
+            q.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Data di database telah dibersihkan.");
         }
     }
 
     async function copyPlanningToHasil() {
-        if(confirm("Salin semua Planning ke Hasil Kerja?")) {
-            const q = await db.collection("daily_reports").where("type", "==", "Planning").get();
+        const tgl = document.getElementById('tglLaporan').value;
+        if(confirm("Salin data Planning ke Hasil Kerja untuk tanggal " + tgl + "?")) {
+            const q = await db.collection("reports_v3").where("tgl", "==", tgl).where("type", "==", "Planning").get();
+            if(q.empty) return alert("Tidak ada data Planning di tanggal ini.");
             q.forEach(doc => {
                 let d = doc.data();
                 d.type = "Hasil";
-                d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                db.collection("daily_reports").add(d);
+                d.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                db.collection("reports_v3").add(d);
             });
             switchTab('Hasil');
         }
     }
 
     function salinWA() {
-        let text = `*LAPORAN ${currentTab.toUpperCase()}*\n`;
-        document.querySelectorAll('.acc-item').forEach(el => {
-            text += `\n📌 *${el.querySelector('.acc-header').children[0].innerText}*\n`;
-            text += el.querySelector('.acc-body').innerText.replace('Hapus Kegiatan', '');
+        const tgl = document.getElementById('tglLaporan').value;
+        let text = `*🟢 LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${tgl}\n`;
+        text += `------------------------------------------\n`;
+        
+        let tH = 0; let tL = 0;
+        const items = document.querySelectorAll('.acc-item');
+        
+        if(items.length === 0) return alert("Tidak ada data untuk disalin.");
+
+        db.collection("reports_v3").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(snap => {
+            snap.forEach((doc, i) => {
+                const d = doc.data();
+                const lSum = d.paddocks.reduce((a,b)=>a+b.luas, 0);
+                tH += d.hk; tL += lSum;
+                
+                text += `\n*${i+1}. ${d.kegiatan.toUpperCase()}*\n`;
+                text += `  📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}\n`;
+                text += `  🧪 Bahan: ${d.bahans.join(", ") || "-"}\n`;
+                text += `  🚜 Alat: ${d.unit} [J:${d.jln} R:${d.rsk} S:${d.std}]\n`;
+                text += `  👷 HK: ${d.hk} | 📝 Ket: ${d.ket || "-"}\n`;
+            });
+            text += `\n------------------------------------------\n`;
+            text += `📊 *TOTAL LUAS:* ${tL.toFixed(2)} Ha\n`;
+            text += `👷 *TOTAL HK:* ${tH}\n`;
+            text += `\n🔗 _Link Laporan:_ ${window.location.href}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Format WA Berhasil Disalin! Silakan Paste ke Grup.");
+            });
         });
-        navigator.clipboard.writeText(text + `\nLink: ${window.location.href}`);
-        alert("Disalin ke WhatsApp!");
     }
 
-    async function downloadCSV() {
-        const q = await db.collection("daily_reports").where("type", "==", currentTab).get();
-        let csv = "Kegiatan,Total Luas,HK,Unit,Keterangan\n";
-        q.forEach(doc => {
-            const d = doc.data();
-            const tl = d.paddocks.reduce((s,p)=>s+p.luas, 0);
-            csv += `"${d.kegiatan}","${tl}","${d.hk}","${d.unit}","${d.ket}"\n`;
+    function downloadCSV() {
+        const tgl = document.getElementById('tglLaporan').value;
+        db.collection("reports_v3").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(q => {
+            let csv = "Kegiatan,Paddock,Total Luas,HK,Unit,Jln,Rsk,Std,Keterangan\n";
+            q.forEach(doc => {
+                const d = doc.data();
+                const tl = d.paddocks.reduce((s,p)=>s+p.luas, 0);
+                csv += `"${d.kegiatan}","${d.paddocks.map(p=>p.name).join(";")}","${tl}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.ket}"\n`;
+            });
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Laporan_${currentTab}_${tgl}.csv`;
+            a.click();
         });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Laporan_${currentTab}.csv`;
-        a.click();
     }
 
     loadData();
