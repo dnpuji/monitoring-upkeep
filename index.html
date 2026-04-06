@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.28</title>
+    <title>Monitoring Upkeep v2.29</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -11,87 +11,76 @@
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); font-size: 13px; padding-bottom: 100px; }
         .header { background: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary); }
         .tab-menu { display: flex; gap: 8px; margin-bottom: 15px; }
-        .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #e2e8f0; font-weight: 600; color: #64748b; transition: 0.3s; }
-        .tab-menu button.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(45, 90, 39, 0.3); }
+        .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #e2e8f0; font-weight: 600; color: #64748b; }
+        .tab-menu button.active { background: var(--primary); color: white; }
         .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; }
         .row { display: flex; gap: 8px; margin-bottom: 10px; }
-        input, textarea { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1); }
-        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        input, textarea { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
+        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
         .acc-item { background: white; margin-bottom: 12px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-        .acc-main-row { display: flex; align-items: center; background: #eef2f7; }
+        .acc-main-row { display: flex; align-items: center; background: #eef2f7; border-bottom: 1px solid #e2e8f0; }
         .acc-header { flex: 1; padding: 15px; font-weight: 800; color: #0f172a; cursor: pointer; }
-        .acc-body { padding: 15px; display: none; background: white; border-top: 1px solid #e2e8f0; line-height: 1.8; }
+        .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; }
         .footer-btns { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-edit { background: #3b82f6; color: white; border: none; padding: 12px; flex: 3; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn-del-single { background: var(--danger); color: white; border: none; padding: 12px; flex: 1; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 1000; }
+        .btn-edit { background: #3b82f6; color: white; border: none; padding: 10px; flex: 3; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 10px; flex: 1; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h2 style="margin:0; color: var(--primary);">Monitoring Upkeep</h2>
-    <span style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Divisi Pengolahan Lahan</span>
+    <span style="font-size: 12px; color: #64748b; font-weight: bold;">DAILY WORK PLAN</span>
 </div>
 
 <div class="tab-menu">
-    <button id="tabPlanning" class="active" onclick="switchTab('Planning')">📋 PLAN</button>
+    <button id="tabPlanning" class="active" onclick="switchTab('Planning')">📋 PLANNING</button>
     <button id="tabHasil" onclick="switchTab('Hasil')">✅ HASIL</button>
-    <button id="tabRekap" onclick="switchTab('Rekap')">📊 HIST</button>
+    <button id="tabRekap" onclick="switchTab('Rekap')">📊 HISTORY</button>
 </div>
 
 <div id="viewMain">
-    <div class="card" style="text-align:center; padding: 10px;">
-        <input type="date" id="tglLaporan" onchange="loadData()" style="font-weight:bold; color:var(--primary); border:none; font-size:16px; text-align: center;">
+    <div class="card" style="text-align:center;">
+        <input type="date" id="tglLaporan" onchange="loadData()" style="font-weight:bold; color:var(--primary); border:none; font-size:16px;">
     </div>
 
     <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-            <b id="formTitle" style="color:var(--primary); font-size:15px;">Input Planning</b>
-            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:10px;">HAPUS SEMUA</button>
+            <b id="formTitle" style="color:var(--primary); font-size:16px;">Input Planning</b>
+            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS DATA</button>
         </div>
         
         <input type="hidden" id="editId">
-        <input type="text" id="kegiatan" placeholder="📝 Nama Kegiatan (Contoh: Manuring)">
-        
-        <div id="paddockContainer" style="margin-top:10px;"><div class="row"><input type="text" class="p-name" placeholder="📍 Kode Paddock"><input type="number" class="p-luas" placeholder="Ha" step="0.01"></div></div>
-        <button onclick="addRow('paddockContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; cursor:pointer; margin-bottom:10px;">+ Tambah Paddock</button>
+        <input type="text" id="kegiatan" placeholder="📝 Nama Kegiatan" style="margin-bottom:10px;">
+        <div id="paddockContainer"><div class="row"><input type="text" class="p-name" placeholder="📍 Pdk"><input type="number" class="p-luas" placeholder="📐 Ha" step="0.01"></div></div>
+        <button onclick="addRow('paddockContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Paddock</button>
 
-        <div class="row"><input type="number" id="hk" placeholder="👷 Jumlah HK"><input type="text" id="unit" placeholder="🚜 Unit Alat"></div>
+        <div class="row"><input type="number" id="hk" placeholder="👷 HK"><input type="text" id="unit" placeholder="🚜 Alat/Unit"></div>
         <div class="row">
-            <input type="number" id="jln" placeholder="🟢 Ready" value="0">
-            <input type="number" id="rsk" placeholder="🔴 BD" value="0">
-            <input type="number" id="std" placeholder="🟡 Sby" value="0">
+            <input type="number" id="jln" placeholder="🟢 Rdy">
+            <input type="number" id="rsk" placeholder="🔴 Bdn">
+            <input type="number" id="std" placeholder="🟡 Sby">
         </div>
-        
-        <div id="bahanContainer"><div class="row"><input type="text" class="b-name" placeholder="🧪 Nama Bahan/Pupuk"></div></div>
-        <button onclick="addRow('bahanContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; cursor:pointer; margin-bottom:10px;">+ Tambah Bahan</button>
-        
-        <textarea id="ket" placeholder="ℹ️ Keterangan tambahan..." rows="2"></textarea>
-        
-        <button id="btnSimpan" class="btn-main" onclick="simpanData(false)">💾 SIMPAN LAPORAN</button>
-        <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none; cursor:pointer;" onclick="simpanData(true)">🆙 PERBARUI DATA</button>
+        <div id="bahanContainer"><div class="row"><input type="text" class="b-name" placeholder="🧪 Bahan"></div></div>
+        <button onclick="addRow('bahanContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Bahan</button>
+        <textarea id="ket" placeholder="ℹ️ Ket..." rows="2"></textarea>
+        <button id="btnSimpan" class="btn-main" onclick="simpanData(false)">💾 SIMPAN DATA</button>
+        <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none;" onclick="simpanData(true)">🆙 UPDATE</button>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px;">
-        <button onclick="salinWA()" style="background:#22c55e; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px;">🟢 WA</button>
-        <button onclick="copyPlanningToHasil()" style="background:#64748b; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px;">🔄 COPY</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+        <button onclick="salinWA()" style="background:#22c55e; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px;">🟢 SALIN WA</button>
+        <button onclick="copyPlanningToHasil()" style="background:#64748b; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px;">🔄 KE HASIL</button>
         <button onclick="downloadCSV()" style="background:#007bff; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px;">📂 CSV</button>
     </div>
-    
     <div id="displayList"></div>
 </div>
 
 <div id="viewRekap" style="display:none;">
     <div class="card">
-        <label><b>Rentang Tanggal:</b></label>
+        <label><b>Rentang History:</b></label>
         <div class="row" style="margin-top:10px;"><input type="date" id="rekapMulai"><input type="date" id="rekapSelesai"></div>
-        <div style="display: flex; justify-content: space-around; padding: 10px; background: #f1f5f9; border-radius: 10px; margin-bottom: 10px;">
-            <label><input type="radio" name="fTipe" value="SEMUA" checked> SEMUA</label>
-            <label><input type="radio" name="fTipe" value="Planning"> PLAN</label>
-            <label><input type="radio" name="fTipe" value="Hasil"> HASIL</label>
-        </div>
         <button class="btn-main" onclick="prosesHistory()">🔎 CARI DATA</button>
     </div>
     <div id="hasilRekap"></div>
@@ -100,7 +89,6 @@
 <div class="total-footer" id="footerTotalHK">TOTAL HK: 0 👷</div>
 
 <script>
-    // Konfigurasi Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyAgxUFI0NSD-7Ka8ZxFJwkupR6rgb_i00w",
         authDomain: "monitoring-upkeep.firebaseapp.com",
@@ -109,13 +97,15 @@
         messagingSenderId: "631929326010",
         appId: "1:631929326010:web:8f9263c2a9281ef7ff7583"
     };
-    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let currentTab = "Planning";
-    let unsubscribe = null;
 
-    function formatTglIndo(iso) { if(!iso) return "-"; const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; }
+    function formatTglIndo(isoDate) {
+        if(!isoDate) return "-";
+        const [y, m, d] = isoDate.split("-");
+        return `${d}/${m}/${y}`;
+    }
 
     function switchTab(t) {
         currentTab = t;
@@ -124,6 +114,22 @@
         document.getElementById('viewMain').style.display = (t === 'Rekap') ? 'none' : 'block';
         document.getElementById('viewRekap').style.display = (t === 'Rekap') ? 'block' : 'none';
         if(t !== 'Rekap') { document.getElementById('formTitle').innerText = "Input " + t; clearForm(); loadData(); }
+    }
+
+    async function hapusSatuKegiatan(id, nama) {
+        if(confirm(`Hapus kegiatan: ${nama}?`)) {
+            await db.collection("reports_v13").doc(id).delete();
+        }
+    }
+
+    async function hapusSemuaHariIni() {
+        const tgl = document.getElementById('tglLaporan').value;
+        if(confirm(`HAPUS SEMUA data ${currentTab} ${formatTglIndo(tgl)}?`)) {
+            const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get();
+            const batch = db.batch();
+            q.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        }
     }
 
     function addRow(id, n="", l="") {
@@ -136,40 +142,38 @@
     }
 
     function loadData() {
-        if(unsubscribe) unsubscribe();
         const tgl = document.getElementById('tglLaporan').value;
-        unsubscribe = db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab)
-            .onSnapshot(snap => {
-                let html = ""; let total = 0;
-                snap.forEach(doc => {
-                    const d = doc.data(); total += (d.hk || 0);
-                    const luas = d.paddocks.reduce((a,b) => a + (parseFloat(b.luas) || 0), 0);
-                    html += `<div class="acc-item">
-                        <div class="acc-main-row">
-                            <div class="acc-header" onclick="toggleAcc('${doc.id}')">📝 ${d.kegiatan} (${luas.toFixed(2)} Ha)</div>
+        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).onSnapshot(snap => {
+            let html = ""; let total = 0;
+            snap.forEach(doc => {
+                const d = doc.data(); total += (d.hk || 0);
+                const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
+                html += `<div class="acc-item">
+                    <div class="acc-main-row" onclick="toggleAcc('${doc.id}')">
+                        <div class="acc-header">📝 ${d.kegiatan} (${sumL.toFixed(2)} Ha)</div>
+                    </div>
+                    <div class="acc-body" id="body-${doc.id}">
+                        📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}<br>
+                        👷 HK: ${d.hk || 0} | 🚜 Alat: ${d.unit || "-"}<br>
+                        ⚙️ Rdy: ${d.jln || 0} | Bdn: ${d.rsk || 0} | Sby: ${d.std || 0}<br>
+                        🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
+                        ℹ️ Ket: ${d.ket || "-"}<br>
+                        <div class="footer-btns">
+                            <button class="btn-edit" onclick="tarikKeForm('${doc.id}')">EDIT</button>
+                            <button class="btn-delete" onclick="hapusSatuKegiatan('${doc.id}', '${d.kegiatan}')">🗑️</button>
                         </div>
-                        <div class="acc-body" id="body-${doc.id}">
-                            📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}<br>
-                            👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}<br>
-                            ⚙️ Ready: ${d.jln} | BD: ${d.rsk} | Sby: ${d.std}<br>
-                            🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
-                            ℹ️ Ket: ${d.ket || "-"}<br>
-                            <div class="footer-btns">
-                                <button class="btn-edit" onclick="tarikKeForm('${doc.id}')">EDIT</button>
-                                <button class="btn-del-single" onclick="hapusKegiatan('${doc.id}', '${d.kegiatan}')">🗑️</button>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-                document.getElementById('displayList').innerHTML = html;
-                document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${total} 👷`;
+                    </div>
+                </div>`;
             });
+            document.getElementById('displayList').innerHTML = html;
+            document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${total} 👷`;
+        });
     }
 
     async function simpanData(isUpdate) {
         const tgl = document.getElementById('tglLaporan').value;
         const payload = {
-            tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value.trim(),
+            tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
             paddocks: Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({ name: el.value, luas: document.querySelectorAll('.p-luas')[i].value })).filter(p => p.name),
             bahans: Array.from(document.querySelectorAll('.b-name')).map(el => el.value).filter(b => b),
             hk: parseInt(document.getElementById('hk').value) || 0, unit: document.getElementById('unit').value,
@@ -177,7 +181,7 @@
             std: parseInt(document.getElementById('std').value) || 0, ket: document.getElementById('ket').value,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        if(!payload.kegiatan) return alert("Isi Nama Kegiatan!");
+        if(!payload.kegiatan) return alert("Isi Kegiatan!");
         if(isUpdate) await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
         else await db.collection("reports_v13").add(payload);
         clearForm();
@@ -186,9 +190,9 @@
     function tarikKeForm(id) {
         db.collection("reports_v13").doc(id).get().then(doc => {
             const d = doc.data(); document.getElementById('editId').value = id;
-            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk;
-            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln;
-            document.getElementById('rsk').value = d.rsk; document.getElementById('std').value = d.std;
+            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk || "";
+            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln || "";
+            document.getElementById('rsk').value = d.rsk || ""; document.getElementById('std').value = d.std || "";
             document.getElementById('ket').value = d.ket; document.getElementById('paddockContainer').innerHTML = "";
             d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
             document.getElementById('bahanContainer').innerHTML = "";
@@ -202,7 +206,7 @@
     function clearForm() {
         document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
         document.getElementById('hk').value = ""; document.getElementById('unit').value = "";
-        document.getElementById('jln').value = "0"; document.getElementById('rsk').value = "0"; document.getElementById('std').value = "0";
+        document.getElementById('jln').value = ""; document.getElementById('rsk').value = ""; document.getElementById('std').value = "";
         document.getElementById('ket').value = "";
         document.getElementById('paddockContainer').innerHTML = `<div class="row"><input type="text" class="p-name" placeholder="Pdk"><input type="number" class="p-luas" placeholder="Ha"></div>`;
         document.getElementById('bahanContainer').innerHTML = `<div class="row"><input type="text" class="b-name" placeholder="Bahan"></div>`;
@@ -210,23 +214,8 @@
         document.getElementById('btnSimpan').style.display = "block";
     }
 
-    async function hapusKegiatan(id, nama) { if(confirm(`Hapus ${nama}?`)) await db.collection("reports_v13").doc(id).delete(); }
-    function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display==='block')?'none':'block'; }
-
-    async function prosesHistory() {
-        const start = document.getElementById('rekapMulai').value;
-        const end = document.getElementById('rekapSelesai').value;
-        const filter = document.querySelector('input[name="fTipe"]:checked').value;
-        const snap = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
-        let h = "";
-        snap.forEach(doc => {
-            const d = doc.data(); if(filter !== "SEMUA" && d.type !== filter) return;
-            h += `<div style="border-left:5px solid ${d.type==='Planning'?'#3b82f6':'#22c55e'}; background:white; padding:12px; border-radius:10px; margin-bottom:10px;">
-                <b>📅 ${formatTglIndo(d.tgl)} [${d.type}]</b><br>📝 ${d.kegiatan}<br>👷 HK: ${d.hk}</div>`;
-        });
-        document.getElementById('hasilRekap').innerHTML = h || "<center>Tidak ada data.</center>";
-    }
-
+    function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display === 'block') ? 'none' : 'block'; }
+    
     document.getElementById('tglLaporan').valueAsDate = new Date();
     loadData();
 </script>
