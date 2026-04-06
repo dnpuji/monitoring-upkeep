@@ -3,41 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.18 - Sihar</title>
+    <title>Monitoring Upkeep v2.19 - Sihar</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #2d5a27; --accent: #6b8e23; --bg: #f8fafc; --text: #334155; --danger: #ef4444; }
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); font-size: 13px; padding-bottom: 120px; }
-        
         .header { background: white; padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary); }
         .tab-menu { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; background: #e2e8f0; font-weight: 600; color: #64748b; }
         .tab-menu button.active { background: var(--primary); color: white; }
-        
         .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; }
         .row { display: flex; gap: 8px; margin-bottom: 10px; }
-        
-        input, textarea { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #fff; outline: none; }
-        input:focus { border-color: var(--primary); background: #f0fdf4; }
-
+        input, textarea { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
         .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .btn-action { padding: 10px 5px; border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
-
+        .btn-action { padding: 10px 5px; border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .acc-item { background: white; margin-bottom: 12px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
         .acc-main-row { display: flex; align-items: center; background: #eef2f7; border-bottom: 1px solid #e2e8f0; }
         .acc-header { flex: 1; padding: 15px; font-weight: 800; color: #0f172a; cursor: pointer; }
         .order-controls { display: flex; gap: 5px; padding-right: 12px; }
-        .btn-order { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 12px; cursor: pointer; color: var(--primary); }
-        
-        .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; color: #334155; }
-        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; }
-
-        /* History Styling */
+        .btn-order { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--primary); }
+        .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; }
+        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
         .summary-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .hist-card { border-left: 5px solid var(--primary); background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; font-size: 15px; z-index: 100; border-top: 4px solid var(--primary); }
+        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -61,7 +50,7 @@
     <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
             <b id="formTitle" style="color:var(--primary); font-size:16px;">Input Planning</b>
-            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS DATA</button>
+            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS DATA</button>
         </div>
         
         <input type="hidden" id="editId">
@@ -78,7 +67,7 @@
         <div id="bahanContainer"><div class="row"><input type="text" class="b-name" placeholder="🧪 Bahan"></div></div>
         <button onclick="addRow('bahanContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Bahan</button>
         <textarea id="ket" placeholder="ℹ️ Ket..." rows="2"></textarea>
-        <button class="btn-main" onclick="simpanData(false)">💾 SIMPAN</button>
+        <button class="btn-main" onclick="simpanData(false)">💾 SIMPAN DATA</button>
         <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none;" onclick="simpanData(true)">🆙 UPDATE</button>
     </div>
 
@@ -87,17 +76,13 @@
         <button class="btn-action" style="background:#64748b" onclick="copyPlanningToHasil()">🔄 KE HASIL</button>
         <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">📂 CSV BACKUP</button>
     </div>
-
     <div id="displayList"></div>
 </div>
 
 <div id="viewRekap" style="display:none;">
     <div class="card">
         <label><b>Rentang History Kerja:</b></label>
-        <div class="row" style="margin-top:10px;">
-            <input type="date" id="rekapMulai">
-            <input type="date" id="rekapSelesai">
-        </div>
+        <div class="row" style="margin-top:10px;"><input type="date" id="rekapMulai"><input type="date" id="rekapSelesai"></div>
         <button class="btn-main" onclick="prosesHistory()">🔎 CARI DATA HISTORY</button>
     </div>
     <div id="hasilRekap"></div>
@@ -127,41 +112,31 @@
         if(t !== 'Rekap') { document.getElementById('formTitle').innerText = "Input " + t; loadData(); }
     }
 
+    // FIX: Fungsi Hapus Total Berfungsi Kembali
+    async function hapusSemuaHariIni() {
+        const tgl = document.getElementById('tglLaporan').value;
+        if(confirm(`HAPUS TOTAL semua data ${currentTab} tanggal ${tgl}?`)) {
+            const q = await db.collection("reports_v13")
+                        .where("tgl", "==", tgl)
+                        .where("type", "==", currentTab)
+                        .get();
+            
+            if(q.empty) return alert("Tidak ada data untuk dihapus.");
+            
+            const batch = db.batch();
+            q.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Berhasil dihapus!");
+        }
+    }
+
     function addRow(id, valName="", valLuas="") {
         const div = document.createElement('div');
         div.className = 'row';
         div.innerHTML = (id === 'paddockContainer') 
-            ? `<input type="text" class="p-name" value="${valName}" placeholder="Pdk"><input type="number" class="p-luas" value="${valLuas}" placeholder="Ha" step="0.01"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`
+            ? `<input type="text" class="p-name" value="${valName}" placeholder="Pdk"><input type="number" class="p-luas" value="${valLuas}" placeholder="Ha"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`
             : `<input type="text" class="b-name" value="${valName}" placeholder="Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`;
         document.getElementById(id).appendChild(div);
-    }
-
-    async function prosesHistory() {
-        const start = document.getElementById('rekapMulai').value;
-        const end = document.getElementById('rekapSelesai').value;
-        if(!start || !end) return alert("Pilih tanggal!");
-        
-        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
-        let pdkTotals = {}; let grandHK = 0; let html = "";
-
-        if(q.empty) { document.getElementById('hasilRekap').innerHTML = "<center>Data tidak ditemukan.</center>"; return; }
-
-        q.forEach(doc => {
-            const d = doc.data(); grandHK += d.hk;
-            d.paddocks.forEach(p => { pdkTotals[p.name] = (pdkTotals[p.name] || 0) + p.luas; });
-            html += `<div class="hist-card">
-                <b>📅 ${d.tgl} (${d.type})</b><br>
-                <span style="color:var(--primary); font-weight:800;">📝 ${d.kegiatan.toUpperCase()}</span><br>
-                📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>
-                👷 HK: ${d.hk} | 🚜 Unit: ${d.unit || "-"}<br>
-                ℹ️ Ket: ${d.ket || "-"}
-            </div>`;
-        });
-
-        let sumHtml = `<div class="summary-box"><b>📊 REKAPAN TOTAL:</b><br>`;
-        for(let n in pdkTotals) sumHtml += `• ${n}: ${pdkTotals[n].toFixed(2)} Ha<br>`;
-        sumHtml += `<hr><b>Total HK:</b> ${grandHK} HK</div>`;
-        document.getElementById('hasilRekap').innerHTML = sumHtml + html;
     }
 
     function moveOrder(el, direction) {
@@ -176,7 +151,6 @@
             let listHtml = ""; let totalHK = 0;
             const items = []; snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
             items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
-
             items.forEach(d => {
                 totalHK += d.hk; const sumL = d.paddocks.reduce((a, b) => a + b.luas, 0);
                 listHtml += `<div class="acc-item" data-id="${d.id}">
@@ -214,31 +188,40 @@
             rsk: document.getElementById('rsk').value || 0, std: document.getElementById('std').value || 0,
             ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        if(!payload.kegiatan) return alert("Isi Kegiatan!");
         if(isUpdate) await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
         else await db.collection("reports_v13").add(payload);
         clearForm();
     }
 
+    async function prosesHistory() {
+        const start = document.getElementById('rekapMulai').value;
+        const end = document.getElementById('rekapSelesai').value;
+        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
+        let pdkTotals = {}; let grandHK = 0; let html = "";
+        q.forEach(doc => {
+            const d = doc.data(); grandHK += d.hk;
+            d.paddocks.forEach(p => { pdkTotals[p.name] = (pdkTotals[p.name] || 0) + p.luas; });
+            html += `<div style="border-left:5px solid var(--primary); background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <b>📅 ${d.tgl} (${d.type})</b><br><span style="color:var(--primary); font-weight:800;">📝 ${d.kegiatan}</span><br>📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>👷 HK: ${d.hk}</div>`;
+        });
+        document.getElementById('hasilRekap').innerHTML = html;
+    }
+
     function salinWA() {
         const tgl = document.getElementById('tglLaporan').value;
         let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${tgl}\n--------------------------\n`;
-        let totalHK_Semua = 0;
         document.querySelectorAll('.acc-item').forEach((el, i) => {
-            const header = el.querySelector('.acc-header').innerText;
-            const body = el.querySelector('.acc-body').innerText.replace("EDIT", "");
-            const hkMatch = body.match(/HK: (\d+)/);
-            if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
-            text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
+            text += `\n*${i+1}. ${el.querySelector('.acc-header').innerText.toUpperCase()}*\n${el.querySelector('.acc-body').innerText.replace("EDIT", "")}\n`;
         });
-        text += `\n--------------------------\n*TOTAL HK: ${totalHK_Semua} 👷*`;
-        navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
+        navigator.clipboard.writeText(text); alert("WA Disalin!");
     }
 
     async function copyPlanningToHasil() {
         const tgl = document.getElementById('tglLaporan').value;
         const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
         q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; db.collection("reports_v13").add(d); });
-        switchTab('Hasil'); alert("Tersalin!");
+        switchTab('Hasil');
     }
 
     function downloadCSV() {
