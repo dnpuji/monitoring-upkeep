@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.26</title>
+    <title>Monitoring Upkeep v2.32</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -16,27 +16,29 @@
         .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; }
         .row { display: flex; gap: 8px; margin-bottom: 10px; }
         input, textarea { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .btn-action { padding: 10px 5px; border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .acc-item { background: white; margin-bottom: 12px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-        .acc-main-row { display: flex; align-items: center; background: #eef2f7; border-bottom: 1px solid #e2e8f0; }
-        .acc-header { flex: 1; padding: 15px; font-weight: 800; color: #0f172a; cursor: pointer; }
-        .order-controls { display: flex; gap: 5px; padding-right: 12px; }
-        .btn-order { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--primary); font-weight: bold; }
-        .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; }
         .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
-        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
-        .filter-box { display: flex; justify-content: space-around; margin: 10px 0; padding: 10px; background: #f1f5f9; border-radius: 10px; }
-        .filter-box label { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px; }
-        /* Style baru untuk tombol aksi di rincian */
-        .btn-group-detail { display: flex; gap: 8px; margin-top: 10px; }
+        
+        .acc-item { background: white; margin-bottom: 12px; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+        .acc-main-row { display: flex; align-items: center; background: #fcfdfe; }
+        .acc-header { flex: 1; padding: 15px; font-weight: 800; color: #0f172a; cursor: pointer; }
+        .order-controls { display: flex; flex-direction: column; gap: 2px; padding: 5px 10px; border-left: 1px solid #f1f5f9; }
+        .btn-order { background: #f1f5f9; border: none; border-radius: 4px; color: #94a3b8; font-size: 10px; padding: 4px 8px; cursor: pointer; }
+        
+        .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; border-top: 1px solid #f1f5f9; }
+        .footer-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-edit { background: #3b82f6; color: white; border: none; padding: 10px; flex: 3; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 10px; flex: 1; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; }
+        .filter-group { display: flex; gap: 5px; margin-bottom: 15px; background: #f1f5f9; padding: 5px; border-radius: 10px; }
+        .filter-group label { flex: 1; text-align: center; padding: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h2 style="margin:0; color: var(--primary);">Monitoring Upkeep</h2>
-    <span style="font-size: 12px; color: #64748b; font-weight: bold;">DAILY WORK PLAN</span>
+    <span style="font-size: 12px; color: #64748b; font-weight: bold;">UNIT: MERAUKE PAPUA</span>
 </div>
 
 <div class="tab-menu">
@@ -47,38 +49,37 @@
 
 <div id="viewMain">
     <div class="card" style="text-align:center;">
-        <input type="date" id="tglLaporan" onchange="loadData()" style="font-weight:bold; color:var(--primary); border:none; font-size:16px;">
+        <input type="date" id="tglLaporan" onchange="loadData()" style="font-weight:bold; color:var(--primary); border:none; font-size:16px; text-align:center;">
     </div>
 
     <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
             <b id="formTitle" style="color:var(--primary); font-size:16px;">Input Planning</b>
-            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS DATA</button>
+            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ CLEAR ALL</button>
         </div>
         
         <input type="hidden" id="editId">
-        <input type="text" id="kegiatan" placeholder="📝 Nama Kegiatan" style="margin-bottom:10px;">
-        <div id="paddockContainer"><div class="row"><input type="text" class="p-name" placeholder="📍 Pdk"><input type="number" class="p-luas" placeholder="📐 Ha" step="0.01"></div></div>
+        <input type="text" id="kegiatan" placeholder="📝 Nama Kegiatan">
+        <div id="paddockContainer" style="margin-top:10px;"><div class="row"><input type="text" class="p-name" placeholder="📍 Pdk"><input type="number" class="p-luas" placeholder="Ha" step="0.01"></div></div>
         <button onclick="addRow('paddockContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Paddock</button>
 
-        <div class="row"><input type="number" id="hk" placeholder="👷 HK" onfocus="if(this.value=='0')this.value=''"><input type="text" id="unit" placeholder="🚜 Alat/Unit"></div>
+        <div class="row"><input type="number" id="hk" placeholder="👷 HK"><input type="text" id="unit" placeholder="🚜 Unit"></div>
         <div class="row">
-            <input type="number" id="jln" placeholder="🟢 Rdy" value="0" onfocus="if(this.value=='0')this.value=''">
-            <input type="number" id="rsk" placeholder="🔴 Bdn" value="0" onfocus="if(this.value=='0')this.value=''">
-            <input type="number" id="std" placeholder="🟡 Sby" value="0" onfocus="if(this.value=='0')this.value=''">
+            <input type="number" id="jln" placeholder="🟢 Rdy"><input type="number" id="rsk" placeholder="🔴 Bdn"><input type="number" id="std" placeholder="🟡 Sby">
         </div>
         <div id="bahanContainer"><div class="row"><input type="text" class="b-name" placeholder="🧪 Bahan"></div></div>
         <button onclick="addRow('bahanContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Bahan</button>
         <textarea id="ket" placeholder="ℹ️ Ket..." rows="2"></textarea>
-        <button class="btn-main" onclick="simpanData(false)">💾 SIMPAN DATA</button>
+        <button id="btnSimpan" class="btn-main" onclick="simpanData(false)">💾 SIMPAN DATA</button>
         <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none;" onclick="simpanData(true)">🆙 UPDATE</button>
     </div>
 
-    <div class="action-grid">
-        <button class="btn-action" style="background:#22c55e" onclick="salinWA()">🟢 SALIN WA</button>
-        <button class="btn-action" style="background:#64748b" onclick="copyPlanningToHasil()">🔄 KE HASIL</button>
-        <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">📂 CSV BACKUP</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+        <button onclick="salinWA()" style="background:#22c55e; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px; cursor:pointer;">🟢 WA</button>
+        <button onclick="copyPlanningToHasil()" style="background:#64748b; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px; cursor:pointer;">🔄 KE HASIL</button>
+        <button onclick="downloadCSV()" style="background:#007bff; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:11px; cursor:pointer;">📂 CSV</button>
     </div>
+    
     <div id="displayList"></div>
 </div>
 
@@ -88,7 +89,7 @@
         <div class="row" style="margin-top:10px;"><input type="date" id="rekapMulai"><input type="date" id="rekapSelesai"></div>
         
         <label><b>Tampilkan Kategori:</b></label>
-        <div class="filter-box">
+        <div class="filter-group">
             <label><input type="radio" name="filterTipe" value="SEMUA" checked> SEMUA</label>
             <label><input type="radio" name="filterTipe" value="Planning"> PLANNING</label>
             <label><input type="radio" name="filterTipe" value="Hasil"> HASIL</label>
@@ -111,16 +112,13 @@
         messagingSenderId: "631929326010",
         appId: "1:631929326010:web:8f9263c2a9281ef7ff7583"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let currentTab = "Planning";
-    let dataHistoryGlobal = []; // Menyimpan data history untuk diunduh
+    let dataHistoryGlobal = [];
 
-    function formatTglIndo(isoDate) {
-        if(!isoDate) return "-";
-        const [y, m, d] = isoDate.split("-");
-        return `${d}/${m}/${y}`;
-    }
+    function formatTglIndo(iso) { if(!iso) return "-"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
 
     function switchTab(t) {
         currentTab = t;
@@ -128,183 +126,180 @@
         document.getElementById('tab'+t).classList.add('active');
         document.getElementById('viewMain').style.display = (t === 'Rekap') ? 'none' : 'block';
         document.getElementById('viewRekap').style.display = (t === 'Rekap') ? 'block' : 'none';
-        if(t !== 'Rekap') { document.getElementById('formTitle').innerText = "Input " + t; loadData(); }
+        if(t !== 'Rekap') { document.getElementById('formTitle').innerText = "Input " + t; clearForm(); loadData(); }
     }
 
-    async function hapusSemuaHariIni() {
-        const tgl = document.getElementById('tglLaporan').value;
-        if(confirm(`HAPUS SEMUA data ${currentTab} tanggal ${formatTglIndo(tgl)}?`)) {
-            const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get();
-            if(q.empty) return alert("Data kosong.");
-            const batch = db.batch();
-            q.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            alert("Terhapus!");
-        }
-    }
-
-    function addRow(id, valName="", valLuas="") {
-        const div = document.createElement('div');
-        div.className = 'row';
-        div.innerHTML = (id === 'paddockContainer') 
-            ? `<input type="text" class="p-name" value="${valName}" placeholder="📍 Pdk"><input type="number" class="p-luas" value="${valLuas}" placeholder="📐 Ha" step="0.01"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; padding:0 5px;">✕</button>`
-            : `<input type="text" class="b-name" value="${valName}" placeholder="🧪 Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; padding:0 5px;">✕</button>`;
-        document.getElementById(id).appendChild(div);
-    }
-
-    function moveOrder(el, direction) {
-        const item = el.closest('.acc-item');
-        if (direction === 'up' && item.previousElementSibling) item.parentNode.insertBefore(item, item.previousElementSibling);
-        else if (direction === 'down' && item.nextElementSibling) item.parentNode.insertBefore(item.nextElementSibling, item);
+    async function moveItem(id, dir) {
+        const items = Array.from(document.querySelectorAll('.acc-item'));
+        const idx = items.findIndex(el => el.dataset.id === id);
+        if ((dir === -1 && idx === 0) || (dir === 1 && idx === items.length - 1)) return;
+        
+        const batch = db.batch();
+        const targetIdx = idx + dir;
+        const currentRef = db.collection("reports_v13").doc(id);
+        const targetRef = db.collection("reports_v13").doc(items[targetIdx].dataset.id);
+        
+        batch.update(currentRef, { order: targetIdx });
+        batch.update(targetRef, { order: idx });
+        await batch.commit();
     }
 
     function loadData() {
         const tgl = document.getElementById('tglLaporan').value;
-        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).onSnapshot(snap => {
-            let listHtml = ""; let totalHK = 0;
-            const items = []; snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
-            items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
-            items.forEach(d => {
-                totalHK += (d.hk || 0); 
+        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).orderBy("order", "asc").onSnapshot(snap => {
+            let html = ""; let total = 0;
+            snap.forEach(doc => {
+                const d = doc.data(); total += (d.hk || 0);
                 const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
-                listHtml += `<div class="acc-item" data-id="${d.id}">
+                html += `<div class="acc-item" data-id="${doc.id}">
                     <div class="acc-main-row">
-                        <div class="acc-header" onclick="toggleAcc('${d.id}')">📝 ${d.kegiatan} (${sumL.toFixed(2)} Ha)</div>
+                        <div class="acc-header" onclick="toggleAcc('${doc.id}')">📝 ${d.kegiatan} (${sumL.toFixed(2)} Ha)</div>
                         <div class="order-controls">
-                            <button class="btn-order" onclick="moveOrder(this, 'up')">▲</button>
-                            <button class="btn-order" onclick="moveOrder(this, 'down')">▼</button>
+                            <button class="btn-order" onclick="moveItem('${doc.id}', -1)">▲</button>
+                            <button class="btn-order" onclick="moveItem('${doc.id}', 1)">▼</button>
                         </div>
                     </div>
-                    <div class="acc-body" id="body-${d.id}">
-                        📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas || 0} Ha)`).join(", ")}<br>
+                    <div class="acc-body" id="body-${doc.id}">
+                        📍 Pdk: ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}<br>
                         👷 HK: ${d.hk || 0} | 🚜 Alat: ${d.unit || "-"}<br>
-                        ⚙️ Stat: 🟢${d.jln || 0} | 🔴${d.rsk || 0} | 🟡${d.std || 0}<br>
+                        ⚙️ Rdy: ${d.jln || 0} | Bdn: ${d.rsk || 0} | Sby: ${d.std || 0}<br>
                         🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
                         ℹ️ Ket: ${d.ket || "-"}<br>
-                        <div class="btn-group-detail">
-                            <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; flex:1; border-radius:8px; font-weight:bold; cursor:pointer;">EDIT</button>
-                            <button onclick="hapusSatuKegiatan('${d.id}')" style="background:var(--danger); color:white; border:none; padding:10px; flex:1; border-radius:8px; font-weight:bold; cursor:pointer;">HAPUS</button>
+                        <div class="footer-btns">
+                            <button class="btn-edit" onclick="tarikKeForm('${doc.id}')">EDIT</button>
+                            <button class="btn-delete" onclick="hapusSatu('${doc.id}')">🗑️</button>
                         </div>
                     </div>
                 </div>`;
             });
-            document.getElementById('displayList').innerHTML = listHtml;
-            document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${totalHK} 👷`;
+            document.getElementById('displayList').innerHTML = html;
+            document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${total} 👷`;
         });
-    }
-
-    async function hapusSatuKegiatan(id) {
-        if(confirm("Hapus kegiatan ini?")) {
-            await db.collection("reports_v13").doc(id).delete();
-        }
     }
 
     async function simpanData(isUpdate) {
         const tgl = document.getElementById('tglLaporan').value;
-        const paddocks = Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({
-            name: el.value, luas: parseFloat(document.querySelectorAll('.p-luas')[i].value) || 0
-        })).filter(p => p.name !== "");
-        const bahans = Array.from(document.querySelectorAll('.b-name')).map(el => el.value).filter(b => b !== "");
         const payload = {
             tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
-            paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
-            unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
-            rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
-            ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            paddocks: Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({ name: el.value, luas: document.querySelectorAll('.p-luas')[i].value })).filter(p => p.name),
+            bahans: Array.from(document.querySelectorAll('.b-name')).map(el => el.value).filter(b => b),
+            hk: parseInt(document.getElementById('hk').value) || 0, unit: document.getElementById('unit').value,
+            jln: parseInt(document.getElementById('jln').value) || 0, rsk: parseInt(document.getElementById('rsk').value) || 0,
+            std: parseInt(document.getElementById('std').value) || 0, ket: document.getElementById('ket').value,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        if(!payload.kegiatan) return alert("Isi Kegiatan!");
         if(isUpdate) await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
-        else await db.collection("reports_v13").add(payload);
+        else {
+            const count = document.querySelectorAll('.acc-item').length;
+            await db.collection("reports_v13").add({...payload, order: count});
+        }
         clearForm();
     }
 
     function salinWA() {
         const tgl = document.getElementById('tglLaporan').value;
-        const items = document.querySelectorAll('.acc-item');
-        if(items.length === 0) return alert("Data kosong.");
-        
-        let totalHK_Semua = 0;
-        let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${formatTglIndo(tgl)}\n--------------------------\n`;
-        
-        items.forEach((el, i) => {
-            const header = el.querySelector('.acc-header').innerText;
-            const body = el.querySelector('.acc-body').innerText.split("EDIT")[0].trim();
-            const hkMatch = body.match(/HK: (\d+)/);
-            if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
-            text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
+        let total = 0; let txt = `*LAPORAN ${currentTab.toUpperCase()}*\n📅 *${formatTglIndo(tgl)}*\n\n`;
+        document.querySelectorAll('.acc-item').forEach((el, i) => {
+            const h = el.querySelector('.acc-header').innerText;
+            const b = el.querySelector('.acc-body').innerText.split('EDIT')[0].trim();
+            const hk = b.match(/HK: (\d+)/); if(hk) total += parseInt(hk[1]);
+            txt += `*${i+1}. ${h.toUpperCase()}*\n${b}\n\n`;
         });
-        
-        text += `\n--------------------------\n`;
-        text += `*TOTAL HK: ${totalHK_Semua} 👷*\n`;
-        text += `\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
-        
-        navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
+        txt += `------------------\n*TOTAL HK: ${total} 👷*\n🔗 *Link:* ${window.location.href.split('#')[0]}`;
+        navigator.clipboard.writeText(txt).then(() => alert("Laporan WA Disalin!"));
     }
 
-    function tarikKeForm(id) {
-        db.collection("reports_v13").doc(id).get().then(doc => {
-            const d = doc.data(); document.getElementById('editId').value = id;
-            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk;
-            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln;
-            document.getElementById('rsk').value = d.rsk; document.getElementById('std').value = d.std;
-            document.getElementById('ket').value = d.ket; document.getElementById('paddockContainer').innerHTML = "";
-            d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
-            document.getElementById('bahanContainer').innerHTML = "";
-            d.bahans.forEach(b => addRow('bahanContainer', b));
-            document.getElementById('btnUpdate').style.display = "block"; window.scrollTo(0,0);
+    async function prosesHistory() {
+        const s = document.getElementById('rekapMulai').value;
+        const e = document.getElementById('rekapSelesai').value;
+        const filter = document.querySelector('input[name="filterTipe"]:checked').value;
+        if(!s || !e) return alert("Pilih tanggal!");
+
+        const snap = await db.collection("reports_v13").where("tgl", ">=", s).where("tgl", "<=", e).orderBy("tgl", "desc").get();
+        let h = ""; dataHistoryGlobal = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            if(filter !== "SEMUA" && d.type !== filter) return;
+            dataHistoryGlobal.push(d);
+            const col = d.type === 'Planning' ? '#3b82f6' : '#22c55e';
+            h += `<div class="card" style="border-left: 5px solid ${col}">
+                <b>📅 ${formatTglIndo(d.tgl)} [${d.type}]</b><br>
+                <b>📝 ${d.kegiatan}</b><br>
+                👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
+            </div>`;
         });
+        document.getElementById('hasilRekap').innerHTML = h || "<center>Data Tidak Ditemukan</center>";
+        document.getElementById('btnDownloadHistory').style.display = h ? "block" : "none";
     }
 
-    function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display === 'block') ? 'none' : 'block'; }
-    
-    function clearForm() {
-        document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
-        document.getElementById('hk').value = ""; document.getElementById('unit').value = "";
-        document.getElementById('jln').value = "0"; document.getElementById('rsk').value = "0"; document.getElementById('std').value = "0";
-        document.getElementById('ket').value = "";
-        document.getElementById('paddockContainer').innerHTML = `<div class="row"><input type="text" class="p-name" placeholder="📍 Pdk"><input type="number" class="p-luas" placeholder="📐 Ha"></div>`;
-        document.getElementById('bahanContainer').innerHTML = `<div class="row"><input type="text" class="b-name" placeholder="🧪 Bahan"></div>`;
-        document.getElementById('btnUpdate').style.display = "none";
+    function downloadHistoryCSV() {
+        if(dataHistoryGlobal.length === 0) return;
+        let csv = "Tanggal,Tipe,Kegiatan,HK,Unit,Keterangan\n";
+        dataHistoryGlobal.forEach(d => {
+            csv += `"${d.tgl}","${d.type}","${d.kegiatan}","${d.hk}","${d.unit}","${d.ket}"\n`;
+        });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `History_Upkeep.csv`; a.click();
     }
 
     async function copyPlanningToHasil() {
         const tgl = document.getElementById('tglLaporan').value;
         const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
+        if(q.empty) return alert("Planning Kosong!");
         const batch = db.batch();
         q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; batch.set(db.collection("reports_v13").doc(), d); });
-        await batch.commit(); switchTab('Hasil'); alert("Tersalin!");
+        await batch.commit(); switchTab('Hasil');
     }
 
-    async function prosesHistory() {
-        const start = document.getElementById('rekapMulai').value;
-        const end = document.getElementById('rekapSelesai').value;
-        const filter = document.querySelector('input[name="filterTipe"]:checked').value;
-        if(!start || !end) return alert("Pilih tanggal!");
-        
-        const q = await db.collection("reports_v13")
-                        .where("tgl", ">=", start)
-                        .where("tgl", "<=", end)
-                        .orderBy("tgl", "desc").get();
-        let html = "";
-        let dataAda = false;
-        dataHistoryGlobal = []; // Reset data global
-        
-        if(q.empty) {
-            html = "<center style='padding:20px;'>Data tidak ditemukan.</center>";
-            document.getElementById('btnDownloadHistory').style.display = "none";
-        } else {
-            q.forEach(doc => {
-                const d = doc.data();
-                if(filter !== "SEMUA" && d.type !== filter) return;
-                dataAda = true;
-                dataHistoryGlobal.push(d); // Masukkan ke array global untuk CSV
-                const badgeColor = d.type === "Planning" ? "#3b82f6" : "#22c55e";
-                html += `<div style="border-left:5px solid ${badgeColor}; background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b style="color:#64748b;">📅 ${formatTglIndo(d.tgl)}</b>
-                        <span style="background:${badgeColor}; color:white; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:bold;">${d.type.toUpperCase()}</span>
-                    </div>
-                    <b style="font-size:14px;">📝 ${d.kegiatan}</b><br>
-                    📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}<br>
-                    👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
-                </div
+    function downloadCSV() {
+        const tgl = document.getElementById('tglLaporan').value;
+        let csv = "Kegiatan,Detail\n";
+        document.querySelectorAll('.acc-item').forEach(el => {
+            csv += `"${el.querySelector('.acc-header').innerText}","${el.querySelector('.acc-body').innerText.replace(/\n/g, ' ')}"\n`;
+        });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `Upkeep_${tgl}.csv`; a.click();
+    }
+
+    function addRow(id, n="", l="") {
+        const div = document.createElement('div'); div.className = 'row';
+        div.innerHTML = (id==='paddockContainer') 
+            ? `<input type="text" class="p-name" value="${n}" placeholder="Pdk"><input type="number" class="p-luas" value="${l}" placeholder="Ha" step="0.01"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`
+            : `<input type="text" class="b-name" value="${n}" placeholder="Bahan"><button onclick="this.parentElement.remove()" style="border:none; background:none; color:red;">✕</button>`;
+        document.getElementById(id).appendChild(div);
+    }
+
+    function tarikKeForm(id) {
+        db.collection("reports_v13").doc(id).get().then(doc => {
+            const d = doc.data(); document.getElementById('editId').value = id;
+            document.getElementById('kegiatan').value = d.kegiatan; document.getElementById('hk').value = d.hk || "";
+            document.getElementById('unit').value = d.unit; document.getElementById('jln').value = d.jln || "";
+            document.getElementById('rsk').value = d.rsk || ""; document.getElementById('std').value = d.std || "";
+            document.getElementById('ket').value = d.ket; document.getElementById('paddockContainer').innerHTML = "";
+            d.paddocks.forEach(p => addRow('paddockContainer', p.name, p.luas));
+            document.getElementById('bahanContainer').innerHTML = ""; d.bahans.forEach(b => addRow('bahanContainer', b));
+            document.getElementById('btnUpdate').style.display = "block"; document.getElementById('btnSimpan').style.display = "none";
+            window.scrollTo(0,0);
+        });
+    }
+
+    async function hapusSatu(id) { if(confirm("Hapus Kegiatan Ini?")) await db.collection("reports_v13").doc(id).delete(); }
+    async function hapusSemuaHariIni() { if(confirm("Hapus Semua Data Ini?")) {
+        const tgl = document.getElementById('tglLaporan').value;
+        const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get();
+        const b = db.batch(); q.forEach(d => b.delete(d.ref)); await b.commit();
+    }}
+    function clearForm() {
+        document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
+        document.querySelectorAll('input[type="number"]').forEach(i => i.value = "");
+        document.getElementById('unit').value = ""; document.getElementById('ket').value = "";
+        document.getElementById('paddockContainer').innerHTML = `<div class="row"><input type="text" class="p-name" placeholder="📍 Pdk"><input type="number" class="p-luas" placeholder="Ha"></div>`;
+        document.getElementById('bahanContainer').innerHTML = `<div class="row"><input type="text" class="b-name" placeholder="🧪 Bahan"></div>`;
+        document.getElementById('btnUpdate').style.display = "none"; document.getElementById('btnSimpan').style.display = "block";
+    }
+    function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display==='block')?'none':'block'; }
+    
+    document.getElementById('tglLaporan').valueAsDate = new Date();
+    loadData();
+</script>
+</body>
+</html>
+
