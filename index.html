@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.25</title>
+    <title>Monitoring Upkeep v2.26</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -28,6 +28,8 @@
         .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
         .filter-box { display: flex; justify-content: space-around; margin: 10px 0; padding: 10px; background: #f1f5f9; border-radius: 10px; }
         .filter-box label { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        /* Style baru untuk tombol aksi di rincian */
+        .btn-group-detail { display: flex; gap: 8px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -93,6 +95,7 @@
         </div>
 
         <button class="btn-main" onclick="prosesHistory()">🔎 CARI DATA HISTORY</button>
+        <button id="btnDownloadHistory" onclick="downloadHistoryCSV()" style="display:none; background:#007bff; color:white; border:none; width:100%; padding:12px; border-radius:12px; font-weight:700; cursor:pointer; margin-top:10px;">📂 DOWNLOAD CSV HISTORY</button>
     </div>
     <div id="hasilRekap"></div>
 </div>
@@ -111,6 +114,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let currentTab = "Planning";
+    let dataHistoryGlobal = []; // Menyimpan data history untuk diunduh
 
     function formatTglIndo(isoDate) {
         if(!isoDate) return "-";
@@ -177,13 +181,22 @@
                         ⚙️ Stat: 🟢${d.jln || 0} | 🔴${d.rsk || 0} | 🟡${d.std || 0}<br>
                         🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
                         ℹ️ Ket: ${d.ket || "-"}<br>
-                        <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:10px; font-weight:bold;">EDIT DATA</button>
+                        <div class="btn-group-detail">
+                            <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; flex:1; border-radius:8px; font-weight:bold; cursor:pointer;">EDIT</button>
+                            <button onclick="hapusSatuKegiatan('${d.id}')" style="background:var(--danger); color:white; border:none; padding:10px; flex:1; border-radius:8px; font-weight:bold; cursor:pointer;">HAPUS</button>
+                        </div>
                     </div>
                 </div>`;
             });
             document.getElementById('displayList').innerHTML = listHtml;
             document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${totalHK} 👷`;
         });
+    }
+
+    async function hapusSatuKegiatan(id) {
+        if(confirm("Hapus kegiatan ini?")) {
+            await db.collection("reports_v13").doc(id).delete();
+        }
     }
 
     async function simpanData(isUpdate) {
@@ -215,7 +228,7 @@
         
         items.forEach((el, i) => {
             const header = el.querySelector('.acc-header').innerText;
-            const body = el.querySelector('.acc-body').innerText.split("EDIT DATA")[0].trim();
+            const body = el.querySelector('.acc-body').innerText.split("EDIT")[0].trim();
             const hkMatch = body.match(/HK: (\d+)/);
             if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
             text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
@@ -274,14 +287,17 @@
                         .orderBy("tgl", "desc").get();
         let html = "";
         let dataAda = false;
+        dataHistoryGlobal = []; // Reset data global
         
         if(q.empty) {
             html = "<center style='padding:20px;'>Data tidak ditemukan.</center>";
+            document.getElementById('btnDownloadHistory').style.display = "none";
         } else {
             q.forEach(doc => {
                 const d = doc.data();
                 if(filter !== "SEMUA" && d.type !== filter) return;
                 dataAda = true;
+                dataHistoryGlobal.push(d); // Masukkan ke array global untuk CSV
                 const badgeColor = d.type === "Planning" ? "#3b82f6" : "#22c55e";
                 html += `<div style="border-left:5px solid ${badgeColor}; background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
@@ -291,27 +307,4 @@
                     <b style="font-size:14px;">📝 ${d.kegiatan}</b><br>
                     📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}<br>
                     👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
-                </div>`;
-            });
-            if(!dataAda) html = `<center style='padding:20px;'>Data ${filter} tidak ditemukan.</center>`;
-        }
-        document.getElementById('hasilRekap').innerHTML = html;
-    }
-
-    function downloadCSV() {
-        const tgl = document.getElementById('tglLaporan').value;
-        let csv = "Kegiatan,Paddock,Luas,HK,Unit,Ready,Breakdown,Standby,Bahan,Keterangan\n";
-        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(snap => {
-            snap.forEach(doc => {
-                const d = doc.data();
-                csv += `"${d.kegiatan}","${d.paddocks.map(p=>`${p.name}(${p.luas}Ha)`).join(";")}","${d.paddocks.reduce((a,b)=>a+b.luas,0)}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.bahans.join(";")}","${d.ket}"\n`;
-            });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `Upkeep_${tgl}.csv`; a.click();
-        });
-    }
-
-    document.getElementById('tglLaporan').valueAsDate = new Date();
-    loadData();
-</script>
-</body>
-</html>
+                </div
