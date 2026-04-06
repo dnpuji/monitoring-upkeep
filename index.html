@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.26</title>
+    <title>Monitoring Upkeep v2.27</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -28,7 +28,6 @@
         .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
         .filter-box { display: flex; justify-content: space-around; margin: 10px 0; padding: 10px; background: #f1f5f9; border-radius: 10px; }
         .filter-box label { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px; }
-        /* Style baru untuk tombol aksi di rincian */
         .btn-group-detail { display: flex; gap: 8px; margin-top: 10px; }
     </style>
 </head>
@@ -114,7 +113,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let currentTab = "Planning";
-    let dataHistoryGlobal = []; // Menyimpan data history untuk diunduh
+    let dataHistoryGlobal = [];
 
     function formatTglIndo(isoDate) {
         if(!isoDate) return "-";
@@ -161,9 +160,12 @@
     function loadData() {
         const tgl = document.getElementById('tglLaporan').value;
         db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).onSnapshot(snap => {
-            let listHtml = ""; let totalHK = 0;
-            const items = []; snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
+            let listHtml = ""; 
+            let totalHK = 0;
+            const items = []; 
+            snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
             items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
+            
             items.forEach(d => {
                 totalHK += (d.hk || 0); 
                 const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
@@ -189,7 +191,7 @@
                 </div>`;
             });
             document.getElementById('displayList').innerHTML = listHtml;
-            document.getElementById('footerTotalHK').innerText = `TOTAL HK: ${totalHK} 👷`;
+            document.getElementById('footerTotalHK').innerText = `TOTAL HK ${currentTab.toUpperCase()}: ${totalHK} 👷`;
         });
     }
 
@@ -222,10 +224,8 @@
         const tgl = document.getElementById('tglLaporan').value;
         const items = document.querySelectorAll('.acc-item');
         if(items.length === 0) return alert("Data kosong.");
-        
         let totalHK_Semua = 0;
         let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${formatTglIndo(tgl)}\n--------------------------\n`;
-        
         items.forEach((el, i) => {
             const header = el.querySelector('.acc-header').innerText;
             const body = el.querySelector('.acc-body').innerText.split("EDIT")[0].trim();
@@ -233,11 +233,7 @@
             if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
             text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
         });
-        
-        text += `\n--------------------------\n`;
-        text += `*TOTAL HK: ${totalHK_Semua} 👷*\n`;
-        text += `\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
-        
+        text += `\n--------------------------\n*TOTAL HK: ${totalHK_Semua} 👷*\n\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
         navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
     }
 
@@ -270,9 +266,10 @@
     async function copyPlanningToHasil() {
         const tgl = document.getElementById('tglLaporan').value;
         const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
+        if(q.empty) return alert("Planning kosong.");
         const batch = db.batch();
-        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; batch.set(db.collection("reports_v13").doc(), d); });
-        await batch.commit(); switchTab('Hasil'); alert("Tersalin!");
+        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; d.updatedAt = firebase.firestore.FieldValue.serverTimestamp(); batch.set(db.collection("reports_v13").doc(), d); });
+        await batch.commit(); switchTab('Hasil'); alert("Tersalin ke Hasil!");
     }
 
     async function prosesHistory() {
@@ -280,15 +277,8 @@
         const end = document.getElementById('rekapSelesai').value;
         const filter = document.querySelector('input[name="filterTipe"]:checked').value;
         if(!start || !end) return alert("Pilih tanggal!");
-        
-        const q = await db.collection("reports_v13")
-                        .where("tgl", ">=", start)
-                        .where("tgl", "<=", end)
-                        .orderBy("tgl", "desc").get();
-        let html = "";
-        let dataAda = false;
-        dataHistoryGlobal = []; // Reset data global
-        
+        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
+        let html = ""; let dataAda = false; dataHistoryGlobal = [];
         if(q.empty) {
             html = "<center style='padding:20px;'>Data tidak ditemukan.</center>";
             document.getElementById('btnDownloadHistory').style.display = "none";
@@ -296,8 +286,7 @@
             q.forEach(doc => {
                 const d = doc.data();
                 if(filter !== "SEMUA" && d.type !== filter) return;
-                dataAda = true;
-                dataHistoryGlobal.push(d); // Masukkan ke array global untuk CSV
+                dataAda = true; dataHistoryGlobal.push(d);
                 const badgeColor = d.type === "Planning" ? "#3b82f6" : "#22c55e";
                 html += `<div style="border-left:5px solid ${badgeColor}; background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
@@ -309,26 +298,19 @@
                     👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
                 </div>`;
             });
-            if(!dataAda) {
-                html = `<center style='padding:20px;'>Data ${filter} tidak ditemukan.</center>`;
-                document.getElementById('btnDownloadHistory').style.display = "none";
-            } else {
-                document.getElementById('btnDownloadHistory').style.display = "block";
-            }
+            document.getElementById('btnDownloadHistory').style.display = dataAda ? "block" : "none";
+            if(!dataAda) html = `<center style='padding:20px;'>Data ${filter} tidak ditemukan.</center>`;
         }
         document.getElementById('hasilRekap').innerHTML = html;
     }
 
     function downloadHistoryCSV() {
-        if(dataHistoryGlobal.length === 0) return alert("Tidak ada data untuk diunduh.");
+        if(dataHistoryGlobal.length === 0) return alert("Tidak ada data.");
         let csv = "Tanggal,Tipe,Kegiatan,Paddock,Luas Total,HK,Unit,Ready,Breakdown,Standby,Bahan,Keterangan\n";
         dataHistoryGlobal.forEach(d => {
             csv += `"${d.tgl}","${d.type}","${d.kegiatan}","${d.paddocks.map(p=>`${p.name}(${p.luas}Ha)`).join(";")}","${d.paddocks.reduce((a,b)=>a+b.luas,0)}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.bahans.join(";")}","${d.ket}"\n`;
         });
-        const a = document.createElement('a'); 
-        a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); 
-        a.download = `History_Upkeep_${new Date().getTime()}.csv`; 
-        a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `History_Upkeep.csv`; a.click();
     }
 
     function downloadCSV() {
