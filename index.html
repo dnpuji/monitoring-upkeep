@@ -3,68 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep - Sihar</title>
+    <title>Monitoring Upkeep v2.0 - Sihar</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background: #eef2f3; }
-        .tab-menu { display: flex; margin-bottom: 15px; background: white; border-radius: 8px; overflow: hidden; }
-        .tab-menu button { flex: 1; padding: 12px; border: none; cursor: pointer; background: #ddd; font-weight: bold; }
-        .tab-menu button.active { background: #28a745; color: white; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .btn-simpan { background: #007bff; color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; }
+        :root { --primary: #1a5d1a; --secondary: #f29727; --bg: #f0f2f5; }
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: var(--bg); font-size: 14px; }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 10px; }
+        .tab-menu { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-menu button { flex: 1; padding: 12px; border: none; border-radius: 5px; cursor: pointer; background: #ccc; font-weight: bold; }
+        .tab-menu button.active { background: var(--secondary); color: white; }
+        
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .input-group { border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #fafafa; }
+        .row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+        input, textarea, select { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-add { background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; }
+        .btn-remove { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 4px; }
+        
+        .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 10px 0; }
+        .btn-action { padding: 10px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+
+        /* Accordion Style */
+        .item-list { margin-top: 15px; }
+        .acc-item { background: white; margin-bottom: 5px; border-radius: 5px; overflow: hidden; border: 1px solid #ddd; }
+        .acc-header { padding: 10px; background: #fff; display: flex; justify-content: space-between; cursor: pointer; font-weight: bold; }
+        .acc-body { padding: 10px; display: none; border-top: 1px solid #eee; background: #fdfdfd; }
+        .summary-box { background: #fff3cd; padding: 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="tab-menu">
-        <button id="tabPlanning" class="active" onclick="switchMenu('Planning')">PLANNING</button>
-        <button id="tabHasil" onclick="switchMenu('Hasil')">HASIL KERJA</button>
-    </div>
+<div class="header"><h3>Monitoring Upkeep & Manuring</h3></div>
 
-    <div id="app">
-        <div class="card">
-            <h3 id="titleMenu">Input Planning</h3>
-            <label>Nama Kegiatan</label>
-            <input type="text" id="kegiatan" placeholder="Contoh: Manuring">
-            
-            <label>Paddock (Pisahkan dengan koma)</label>
-            <input type="text" id="paddock" placeholder="Contoh: A01, A02">
-            
-            <label>Luas Target (Ha)</label>
-            <input type="number" id="luas" placeholder="0.00">
-            
-            <label>Jumlah HK</label>
-            <input type="number" id="hk" placeholder="0">
+<div class="tab-menu">
+    <button id="tabPlanning" class="active" onclick="switchTab('Planning')">PLANNING</button>
+    <button id="tabHasil" onclick="switchTab('Hasil')">HASIL KERJA</button>
+</div>
 
-            <label>Bahan</label>
-            <input type="text" id="bahan" placeholder="Jenis pupuk/racun">
+<div class="summary-box" id="dailySummary">Total Luas: 0 Ha | Total HK: 0</div>
 
-            <label>Unit / Alat</label>
-            <input type="text" id="unit" placeholder="Contoh: John Deere 8R">
-
-            <div style="display: flex; gap: 5px;">
-                <input type="number" id="bekerja" placeholder="Jln">
-                <input type="number" id="rusak" placeholder="Rsk">
-                <input type="number" id="standby" placeholder="Std">
-            </div>
-
-            <label>Keterangan</label>
-            <textarea id="keterangan" rows="2"></textarea>
-
-            <button class="btn-simpan" onclick="simpanData()">SIMPAN DATA</button>
+<div id="formSection" class="card">
+    <b id="formTitle">Tambah Kegiatan Planning</b>
+    <input type="text" id="kegiatan" placeholder="Nama Kegiatan (ex: Manuring)">
+    
+    <label style="display:block; margin-top:10px;"><b>Paddock & Luas:</b></label>
+    <div id="paddockContainer">
+        <div class="row">
+            <input type="text" class="p-name" placeholder="Paddock">
+            <input type="number" class="p-luas" placeholder="Luas (Ha)" step="0.01">
         </div>
     </div>
+    <button class="btn-add" onclick="addRow('paddockContainer')">+ Paddock</button>
 
-    <script>
-        function switchMenu(type) {
-            document.getElementById('titleMenu').innerText = "Input " + type;
-            document.getElementById('tabPlanning').className = (type === 'Planning') ? 'active' : '';
-            document.getElementById('tabHasil').className = (type === 'Hasil') ? 'active' : '';
+    <div class="row">
+        <input type="number" id="hk" placeholder="Jumlah HK">
+        <input type="text" id="unit" placeholder="Unit/Alat">
+    </div>
+
+    <label><b>Bahan:</b></label>
+    <div id="bahanContainer">
+        <div class="row"><input type="text" class="b-name" placeholder="Nama Bahan"></div>
+    </div>
+    <button class="btn-add" onclick="addRow('bahanContainer')">+ Bahan</button>
+
+    <div class="row">
+        <input type="number" id="jln" placeholder="Jln">
+        <input type="number" id="rsk" placeholder="Rsk">
+        <input type="number" id="std" placeholder="Std">
+    </div>
+    <textarea id="ket" placeholder="Keterangan..."></textarea>
+    
+    <button class="btn-main" onclick="simpanKeFirebase()">SIMPAN KEGIATAN</button>
+</div>
+
+<div class="action-grid">
+    <button class="btn-action" style="background:#25d366" onclick="salinWA()">Salin WA</button>
+    <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">Download CSV</button>
+    <button class="btn-action" style="background:#333" onclick="hapusSemua()">Hapus Total</button>
+    <button class="btn-action" style="background:#6c757d" onclick="copyPlanningToHasil()">Copy Planning ke Hasil</button>
+</div>
+
+<div id="displayList" class="item-list"></div>
+
+<script>
+    // KONFIGURASI FIREBASE (Sesuai Gambar Kamu)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAgxUFI0NSD-7Ka8ZxFJwkupR6rgb_i00w",
+        authDomain: "monitoring-upkeep.firebaseapp.com",
+        projectId: "monitoring-upkeep",
+        storageBucket: "monitoring-upkeep.firebasestorage.app",
+        messagingSenderId: "631929326010",
+        appId: "1:631929326010:web:8f9263c2a9281ef7ff7583"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let currentTab = "Planning";
+
+    function switchTab(t) {
+        currentTab = t;
+        document.getElementById('tabPlanning').className = (t==='Planning')?'active':'';
+        document.getElementById('tabHasil').className = (t==='Hasil')?'active':'';
+        document.getElementById('formTitle').innerText = "Tambah Kegiatan " + t;
+        loadData();
+    }
+
+    function addRow(containerId) {
+        const div = document.createElement('div');
+        div.className = 'row';
+        if(containerId === 'paddockContainer') {
+            div.innerHTML = `<input type="text" class="p-name" placeholder="Paddock">
+                             <input type="number" class="p-luas" placeholder="Luas" step="0.01">
+                             <button class="btn-remove" onclick="this.parentElement.remove()">X</button>`;
+        } else {
+            div.innerHTML = `<input type="text" class="b-name" placeholder="Nama Bahan">
+                             <button class="btn-remove" onclick="this.parentElement.remove()">X</button>`;
         }
-        
-        function simpanData() {
-            alert("Sistem Firebase akan kita hubungkan di tahap berikutnya!");
+        document.getElementById(containerId).appendChild(div);
+    }
+
+    async function simpanKeFirebase() {
+        const paddocks = Array.from(document.querySelectorAll('.p-name')).map((el, i) => ({
+            name: el.value,
+            luas: parseFloat(document.querySelectorAll('.p-luas')[i].value || 0)
+        }));
+        const bahans = Array.from(document.querySelectorAll('.b-name')).map(el => el.value);
+
+        const data = {
+            type: currentTab,
+            kegiatan: document.getElementById('kegiatan').value,
+            paddocks: paddocks,
+            hk: parseInt(document.getElementById('hk').value || 0),
+            unit: document.getElementById('unit').value,
+            bahans: bahans,
+            jln: document.getElementById('jln').value,
+            rsk: document.getElementById('rsk').value,
+            std: document.getElementById('std').value,
+            ket: document.getElementById('ket').value,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            await db.collection("daily_reports").add(data);
+            alert("Berhasil disimpan!");
+            location.reload(); 
+        } catch (e) { alert("Error: " + e); }
+    }
+
+    function loadData() {
+        db.collection("daily_reports").where("type", "==", currentTab).orderBy("createdAt", "desc")
+        .onSnapshot(snap => {
+            let html = "";
+            let tLuas = 0, tHK = 0;
+            snap.forEach(doc => {
+                const d = doc.data();
+                const totalL = d.paddocks.reduce((s, p) => s + p.luas, 0);
+                tLuas += totalL; tHK += d.hk;
+
+                html += `
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc('${doc.id}')">
+                        <span>${d.kegiatan}</span>
+                        <span>${totalL.toFixed(2)} Ha ▼</span>
+                    </div>
+                    <div class="acc-body" id="body-${doc.id}">
+                        <b>Paddocks:</b> ${d.paddocks.map(p => `${p.name}(${p.luas}Ha)`).join(", ")}<br>
+                        <b>Bahan:</b> ${d.bahans.join(", ")}<br>
+                        <b>Alat:</b> ${d.unit} (J:${d.jln} R:${d.rsk} S:${d.std})<br>
+                        <b>Ket:</b> ${d.ket}<br>
+                        <button class="btn-remove" onclick="hapusItem('${doc.id}')" style="width:100%; margin-top:10px;">Hapus Kegiatan</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('displayList').innerHTML = html;
+            document.getElementById('dailySummary').innerText = `Total Luas: ${tLuas.toFixed(2)} Ha | Total HK: ${tHK}`;
+        });
+    }
+
+    function toggleAcc(id) {
+        const el = document.getElementById('body-'+id);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+
+    async function hapusItem(id) {
+        if(confirm("Hapus item ini?")) await db.collection("daily_reports").doc(id).delete();
+    }
+
+    async function hapusSemua() {
+        if(confirm("Hapus SEMUA data di tab ini?")) {
+            const q = await db.collection("daily_reports").where("type", "==", currentTab).get();
+            q.forEach(doc => doc.ref.delete());
         }
-    </script>
+    }
+
+    async function copyPlanningToHasil() {
+        if(confirm("Salin semua Planning ke Hasil Kerja?")) {
+            const q = await db.collection("daily_reports").where("type", "==", "Planning").get();
+            q.forEach(doc => {
+                let d = doc.data();
+                d.type = "Hasil";
+                d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                db.collection("daily_reports").add(d);
+            });
+            switchTab('Hasil');
+        }
+    }
+
+    function salinWA() {
+        let text = `*LAPORAN ${currentTab.toUpperCase()}*\n`;
+        document.querySelectorAll('.acc-item').forEach(el => {
+            text += `\n📌 *${el.querySelector('.acc-header').children[0].innerText}*\n`;
+            text += el.querySelector('.acc-body').innerText.replace('Hapus Kegiatan', '');
+        });
+        navigator.clipboard.writeText(text + `\nLink: ${window.location.href}`);
+        alert("Disalin ke WhatsApp!");
+    }
+
+    async function downloadCSV() {
+        const q = await db.collection("daily_reports").where("type", "==", currentTab).get();
+        let csv = "Kegiatan,Total Luas,HK,Unit,Keterangan\n";
+        q.forEach(doc => {
+            const d = doc.data();
+            const tl = d.paddocks.reduce((s,p)=>s+p.luas, 0);
+            csv += `"${d.kegiatan}","${tl}","${d.hk}","${d.unit}","${d.ket}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Laporan_${currentTab}.csv`;
+        a.click();
+    }
+
+    loadData();
+</script>
 </body>
 </html>
