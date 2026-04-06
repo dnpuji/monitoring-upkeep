@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Upkeep - Sihar</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background: #eef2f3; }
+        .tab-menu { display: flex; margin-bottom: 15px; background: white; border-radius: 8px; overflow: hidden; }
+        .tab-menu button { flex: 1; padding: 12px; border: none; cursor: pointer; background: #ddd; font-weight: bold; }
+        .tab-menu button.active { background: #28a745; color: white; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-simpan { background: #007bff; color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="tab-menu">
+        <button id="tabPlanning" class="active" onclick="switchMenu('Planning')">PLANNING</button>
+        <button id="tabHasil" onclick="switchMenu('Hasil')">HASIL KERJA</button>
+    </div>
+
+    <div id="app">
+        <div class="card">
+            <h3 id="titleMenu">Input Planning</h3>
+            <label>Nama Kegiatan</label>
+            <input type="text" id="kegiatan" placeholder="Contoh: Manuring">
+            
+            <label>Paddock (Pisahkan dengan koma)</label>
+            <input type="text" id="paddock" placeholder="Contoh: A01, A02">
+            
+            <label>Luas Target (Ha)</label>
+            <input type="number" id="luas" placeholder="0.00">
+            
+            <label>Jumlah HK</label>
+            <input type="number" id="hk" placeholder="0">
+
+            <label>Bahan</label>
+            <input type="text" id="bahan" placeholder="Jenis pupuk/racun">
+
+            <label>Unit / Alat</label>
+            <input type="text" id="unit" placeholder="Contoh: John Deere 8R">
+
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="bekerja" placeholder="Jln">
+                <input type="number" id="rusak" placeholder="Rsk">
+                <input type="number" id="standby" placeholder="Std">
+            </div>
+
+            <label>Keterangan</label>
+            <textarea id="keterangan" rows="2"></textarea>
+
+            <button class="btn-simpan" onclick="simpanData()">SIMPAN DATA</button>
+        </div>
+    </div>
+
+    <script>
+        function switchMenu(type) {
+            document.getElementById('titleMenu').innerText = "Input " + type;
+            document.getElementById('tabPlanning').className = (type === 'Planning') ? 'active' : '';
+            document.getElementById('tabHasil').className = (type === 'Hasil') ? 'active' : '';
+        }
+        
+        function simpanData() {
+            alert("Sistem Firebase akan kita hubungkan di tahap berikutnya!");
+        }
+    </script>
+</body>
+</html>
