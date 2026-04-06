@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.25</title>
+    <title>Monitoring Upkeep v2.26</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -28,6 +28,9 @@
         .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
         .filter-box { display: flex; justify-content: space-around; margin: 10px 0; padding: 10px; background: #f1f5f9; border-radius: 10px; }
         .filter-box label { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .footer-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-edit { background: #3b82f6; color: white; border: none; padding: 12px; flex: 3; border-radius: 10px; font-weight: bold; }
+        .btn-del-single { background: var(--danger); color: white; border: none; padding: 12px; flex: 1; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,7 +54,7 @@
     <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
             <b id="formTitle" style="color:var(--primary); font-size:16px;">Input Planning</b>
-            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS DATA</button>
+            <button onclick="hapusSemuaHariIni()" style="background:var(--danger); border:none; color:white; padding:8px 12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">🗑️ HAPUS SEMUA</button>
         </div>
         
         <input type="hidden" id="editId">
@@ -69,7 +72,7 @@
         <button onclick="addRow('bahanContainer')" style="background:none; border:1px dashed var(--primary); color:var(--primary); width:100%; padding:8px; border-radius:8px; margin-bottom:12px; cursor:pointer;">+ Bahan</button>
         <textarea id="ket" placeholder="ℹ️ Ket..." rows="2"></textarea>
         <button class="btn-main" onclick="simpanData(false)">💾 SIMPAN DATA</button>
-        <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none;" onclick="simpanData(true)">🆙 UPDATE</button>
+        <button id="btnUpdate" style="display:none; background:#3b82f6; color:white; width:100%; padding:16px; border-radius:12px; margin-top:8px; font-weight:700; border:none;" onclick="simpanData(true)">🆙 UPDATE DATA</button>
     </div>
 
     <div class="action-grid">
@@ -139,6 +142,14 @@
         }
     }
 
+    // Fitur Baru: Hapus Satu Kegiatan Saja
+    async function hapusKegiatan(id, nama) {
+        if(confirm(`Hapus kegiatan: ${nama}?`)) {
+            await db.collection("reports_v13").doc(id).delete();
+            alert("Kegiatan dihapus.");
+        }
+    }
+
     function addRow(id, valName="", valLuas="") {
         const div = document.createElement('div');
         div.className = 'row';
@@ -177,7 +188,10 @@
                         ⚙️ Stat: 🟢${d.jln || 0} | 🔴${d.rsk || 0} | 🟡${d.std || 0}<br>
                         🧪 Bahan: ${d.bahans.join(", ") || "-"}<br>
                         ℹ️ Ket: ${d.ket || "-"}<br>
-                        <button onclick="tarikKeForm('${d.id}')" style="background:#3b82f6; color:white; border:none; padding:10px; width:100%; border-radius:8px; margin-top:10px; font-weight:bold;">EDIT DATA</button>
+                        <div class="footer-btns">
+                            <button class="btn-edit" onclick="tarikKeForm('${d.id}')">EDIT DATA</button>
+                            <button class="btn-del-single" onclick="hapusKegiatan('${d.id}', '${d.kegiatan}')">🗑️</button>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -215,10 +229,10 @@
         
         items.forEach((el, i) => {
             const header = el.querySelector('.acc-header').innerText;
-            const body = el.querySelector('.acc-body').innerText.split("EDIT DATA")[0].trim();
-            const hkMatch = body.match(/HK: (\d+)/);
+            const bodyText = el.querySelector('.acc-body').innerText.split("EDIT DATA")[0].trim();
+            const hkMatch = bodyText.match(/HK: (\d+)/);
             if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
-            text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
+            text += `\n*${i+1}. ${header.toUpperCase()}*\n${bodyText}\n`;
         });
         
         text += `\n--------------------------\n`;
@@ -301,17 +315,4 @@
     function downloadCSV() {
         const tgl = document.getElementById('tglLaporan').value;
         let csv = "Kegiatan,Paddock,Luas,HK,Unit,Ready,Breakdown,Standby,Bahan,Keterangan\n";
-        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(snap => {
-            snap.forEach(doc => {
-                const d = doc.data();
-                csv += `"${d.kegiatan}","${d.paddocks.map(p=>`${p.name}(${p.luas}Ha)`).join(";")}","${d.paddocks.reduce((a,b)=>a+b.luas,0)}","${d.hk}","${d.unit}","${d.jln}","${d.rsk}","${d.std}","${d.bahans.join(";")}","${d.ket}"\n`;
-            });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `Upkeep_${tgl}.csv`; a.click();
-        });
-    }
-
-    document.getElementById('tglLaporan').valueAsDate = new Date();
-    loadData();
-</script>
-</body>
-</html>
+        db.collection("reports_v13")
