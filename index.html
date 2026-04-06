@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.23</title>
+    <title>Monitoring Upkeep v2.24</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -26,6 +26,8 @@
         .acc-body { padding: 15px; display: none; background: white; line-height: 1.8; }
         .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
         .total-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: white; padding: 18px; text-align: center; font-weight: 700; z-index: 100; border-top: 4px solid var(--primary); }
+        .filter-box { display: flex; justify-content: space-around; margin: 10px 0; padding: 10px; background: #f1f5f9; border-radius: 10px; }
+        .filter-box label { font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 4px; }
     </style>
 </head>
 <body>
@@ -82,6 +84,14 @@
     <div class="card">
         <label><b>Rentang History Kerja:</b></label>
         <div class="row" style="margin-top:10px;"><input type="date" id="rekapMulai"><input type="date" id="rekapSelesai"></div>
+        
+        <label><b>Tampilkan Kategori:</b></label>
+        <div class="filter-box">
+            <label><input type="radio" name="filterTipe" value="SEMUA" checked> SEMUA</label>
+            <label><input type="radio" name="filterTipe" value="Planning"> PLANNING</label>
+            <label><input type="radio" name="filterTipe" value="Hasil"> HASIL</label>
+        </div>
+
         <button class="btn-main" onclick="prosesHistory()">🔎 CARI DATA HISTORY</button>
     </div>
     <div id="hasilRekap"></div>
@@ -102,6 +112,13 @@
     const db = firebase.firestore();
     let currentTab = "Planning";
 
+    // Helper: Format Tanggal ke DD/MM/YYYY
+    function formatTglIndo(isoDate) {
+        if(!isoDate) return "-";
+        const [y, m, d] = isoDate.split("-");
+        return `${d}/${m}/${y}`;
+    }
+
     function switchTab(t) {
         currentTab = t;
         document.querySelectorAll('.tab-menu button').forEach(b => b.classList.remove('active'));
@@ -113,7 +130,7 @@
 
     async function hapusSemuaHariIni() {
         const tgl = document.getElementById('tglLaporan').value;
-        if(confirm(`HAPUS SEMUA data ${currentTab} tanggal ${tgl}?`)) {
+        if(confirm(`HAPUS SEMUA data ${currentTab} tanggal ${formatTglIndo(tgl)}?`)) {
             const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).get();
             if(q.empty) return alert("Data kosong.");
             const batch = db.batch();
@@ -195,7 +212,7 @@
         if(items.length === 0) return alert("Data kosong.");
         
         let totalHK_Semua = 0;
-        let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${tgl}\n--------------------------\n`;
+        let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${formatTglIndo(tgl)}\n--------------------------\n`;
         
         items.forEach((el, i) => {
             const header = el.querySelector('.acc-header').innerText;
@@ -227,6 +244,7 @@
     }
 
     function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display === 'block') ? 'none' : 'block'; }
+    
     function clearForm() {
         document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
         document.getElementById('hk').value = ""; document.getElementById('unit').value = "";
@@ -245,18 +263,41 @@
         await batch.commit(); switchTab('Hasil'); alert("Tersalin!");
     }
 
+    // PERBAIKAN: History dengan Filter Tipe dan Format Tanggal Indo
     async function prosesHistory() {
         const start = document.getElementById('rekapMulai').value;
         const end = document.getElementById('rekapSelesai').value;
+        const filter = document.querySelector('input[name="filterTipe"]:checked').value;
+        
         if(!start || !end) return alert("Pilih tanggal!");
-        const q = await db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end).orderBy("tgl", "desc").get();
+        
+        let query = db.collection("reports_v13").where("tgl", ">=", start).where("tgl", "<=", end);
+        
+        if(filter !== "SEMUA") {
+            query = query.where("type", "==", filter);
+        }
+
+        const q = await query.orderBy("tgl", "desc").get();
         let html = "";
-        q.forEach(doc => {
-            const d = doc.data();
-            html += `<div style="border-left:5px solid var(--primary); background:white; padding:12px; border-radius:10px; margin-bottom:10px;">
-                <b>📅 ${d.tgl} [${d.type}]</b><br>📝 ${d.kegiatan}<br>📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}<br>👷 HK: ${d.hk}</div>`;
-        });
-        document.getElementById('hasilRekap').innerHTML = html || "Tidak ada data.";
+        
+        if(q.empty) {
+            html = "<center style='padding:20px;'>Data tidak ditemukan.</center>";
+        } else {
+            q.forEach(doc => {
+                const d = doc.data();
+                const badgeColor = d.type === "Planning" ? "#3b82f6" : "#22c55e";
+                html += `<div style="border-left:5px solid ${badgeColor}; background:white; padding:12px; border-radius:10px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b style="color:#64748b;">📅 ${formatTglIndo(d.tgl)}</b>
+                        <span style="background:${badgeColor}; color:white; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:bold;">${d.type.toUpperCase()}</span>
+                    </div>
+                    <b style="font-size:14px;">📝 ${d.kegiatan}</b><br>
+                    📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}<br>
+                    👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}
+                </div>`;
+            });
+        }
+        document.getElementById('hasilRekap').innerHTML = html;
     }
 
     function downloadCSV() {
