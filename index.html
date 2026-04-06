@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.21</title>
+    <title>Monitoring Upkeep v2.22</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -189,7 +189,7 @@
         clearForm();
     }
 
-    // UPDATE: WA dengan Total HK dan Link
+    // PERBAIKAN: Menggunakan URL GitHub Pages yang benar
     function salinWA() {
         const tgl = document.getElementById('tglLaporan').value;
         const items = document.querySelectorAll('.acc-item');
@@ -201,17 +201,15 @@
         items.forEach((el, i) => {
             const header = el.querySelector('.acc-header').innerText;
             const body = el.querySelector('.acc-body').innerText.split("EDIT DATA")[0].trim();
-            
-            // Hitung HK dari tampilan untuk total akhir
             const hkMatch = body.match(/HK: (\d+)/);
             if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
-            
             text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
         });
         
         text += `\n--------------------------\n`;
         text += `*TOTAL HK: ${totalHK_Semua} 👷*\n`;
-        text += `\n*Link Monitoring:* https://siharbatara.github.io/upkeep/`;
+        // Link dinamis berdasarkan lokasi file saat ini
+        text += `\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
         
         navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
     }
