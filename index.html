@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Upkeep v2.8 - Sihar</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <title>Monitoring Upkeep v2.9 - Sihar</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
@@ -19,16 +18,16 @@
         .row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
         input, textarea { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
         
-        /* List & Drag Style */
         .list-container { margin-top: 15px; }
-        .acc-item { background: white; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
-        .handle { padding: 10px; cursor: grab; color: #ccc; font-size: 20px; display: flex; align-items: center; }
+        .acc-item { background: white; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Control Buttons Style */
+        .order-controls { display: flex; flex-direction: column; background: #eee; padding: 5px; border-radius: 4px 0 0 4px; gap: 5px; }
+        .btn-order { background: white; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; padding: 5px; font-size: 14px; }
+        
         .acc-header { flex: 1; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; }
         .acc-body { padding: 12px 15px; display: none; border-top: 1px solid #eee; background: #fafafa; line-height: 1.8; }
         
-        /* Penanda saat item sedang ditarik */
-        .sortable-ghost { opacity: 0.4; background: #d1e7dd; border: 2px dashed #198754; }
-
         .btn-add-row { background: #f0fdf4; color: #166534; border: 1px dashed #166534; padding: 8px; border-radius: 5px; width: 100%; margin-bottom: 10px; font-weight: bold; cursor: pointer; }
         .btn-main { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 15px; cursor: pointer; }
         .btn-update { background: #007bff; color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; margin-top: 5px; cursor: pointer; }
@@ -58,7 +57,7 @@
 <div class="card" id="inputForm">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <b id="formTitle" style="color:var(--primary)">Input Planning</b>
-        <button onclick="clearFormOnly()" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Reset Form</button>
+        <button onclick="clearFormOnly()" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Reset</button>
     </div>
     
     <input type="hidden" id="editId">
@@ -70,7 +69,7 @@
             <input type="number" class="p-luas" placeholder="Ha" step="0.01">
         </div>
     </div>
-    <button class="btn-add-row" onclick="addRow('paddockContainer')">+ Baris Paddock</button>
+    <button class="btn-add-row" onclick="addRow('paddockContainer')">+ Paddock</button>
 
     <div class="row">
         <input type="number" id="hk" placeholder="Jml HK">
@@ -86,11 +85,11 @@
     <div id="bahanContainer">
         <div class="row"><input type="text" class="b-name" placeholder="Bahan"></div>
     </div>
-    <button class="btn-add-row" onclick="addRow('bahanContainer')">+ Baris Bahan</button>
+    <button class="btn-add-row" onclick="addRow('bahanContainer')">+ Bahan</button>
 
     <textarea id="ket" placeholder="Keterangan..."></textarea>
     
-    <button class="btn-main" onclick="simpanData(false)">➕ SIMPAN KEGIATAN</button>
+    <button class="btn-main" onclick="simpanData(false)">➕ SIMPAN DATA</button>
     <button id="btnUpdate" class="btn-update" style="display:none;" onclick="simpanData(true)">💾 UPDATE DATA</button>
 </div>
 
@@ -100,8 +99,6 @@
     <button class="btn-action" style="background:#6c757d" onclick="copyPlanningToHasil()">🔘 Salin ke Hasil</button>
     <button class="btn-action" style="background:var(--danger)" onclick="hapusSemua()">⚠️ Hapus Semua</button>
 </div>
-
-<p style="text-align:center; font-size:11px; color:#777;">*Tekan ikon ☰ dan geser untuk ubah urutan*</p>
 
 <div id="displayList" class="list-container"></div>
 
@@ -120,21 +117,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let currentTab = "Planning";
-    let sortable; // Variabel untuk SortableJS
 
     document.getElementById('tglLaporan').valueAsDate = new Date();
-
-    // Inisialisasi fitur Drag & Drop
-    const el = document.getElementById('displayList');
-    sortable = Sortable.create(el, {
-        handle: '.handle', // Hanya bisa ditarik pada ikon ☰
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: function() {
-            console.log("Urutan manual telah diubah secara visual");
-            // Urutan baru akan otomatis dipakai saat klik "Salin ke WA"
-        }
-    });
 
     function switchTab(t) {
         currentTab = t;
@@ -187,26 +171,33 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if(!payload.kegiatan) return alert("Nama kegiatan kosong!");
+        if(!payload.kegiatan) return alert("Nama kegiatan harus diisi!");
 
         if(isUpdate) {
-            await db.collection("reports_v8").doc(document.getElementById('editId').value).update(payload);
+            await db.collection("reports_v9").doc(document.getElementById('editId').value).update(payload);
             clearFormOnly();
         } else {
-            await db.collection("reports_v8").add(payload);
+            await db.collection("reports_v9").add(payload);
         }
         loadData();
     }
 
+    function moveOrder(el, direction) {
+        const item = el.closest('.acc-item');
+        if (direction === 'up' && item.previousElementSibling) {
+            item.parentNode.insertBefore(item, item.previousElementSibling);
+        } else if (direction === 'down' && item.nextElementSibling) {
+            item.parentNode.insertBefore(item.nextElementSibling, item);
+        }
+    }
+
     function loadData() {
         const tgl = document.getElementById('tglLaporan').value;
-        db.collection("reports_v8").where("tgl", "==", tgl).where("type", "==", currentTab)
+        db.collection("reports_v9").where("tgl", "==", tgl).where("type", "==", currentTab)
         .onSnapshot(snap => {
             let listHtml = ""; let totalHK = 0;
             const items = [];
             snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
-            
-            // Urutan awal berdasarkan waktu input
             items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
 
             items.forEach(d => {
@@ -214,8 +205,11 @@
                 const sumL = d.paddocks.reduce((a, b) => a + b.luas, 0);
                 listHtml += `
                 <div class="acc-item" data-id="${d.id}" data-kegiatan="${d.kegiatan}" data-hk="${d.hk}" data-unit="${d.unit}" data-jln="${d.jln}" data-rsk="${d.rsk}" data-std="${d.std}" data-ket="${d.ket}" data-pdk='${JSON.stringify(d.paddocks)}' data-bahan='${JSON.stringify(d.bahans)}'>
-                    <div style="display:flex; align-items:center;">
-                        <div class="handle">☰</div>
+                    <div style="display:flex; align-items:stretch;">
+                        <div class="order-controls">
+                            <button class="btn-order" onclick="moveOrder(this, 'up')">🔼</button>
+                            <button class="btn-order" onclick="moveOrder(this, 'down')">🔽</button>
+                        </div>
                         <div class="acc-header" onclick="toggleAcc('${d.id}')">
                             <span>${d.kegiatan}</span>
                             <span style="color:#666; font-size:11px;">${sumL.toFixed(2)} Ha ▼</span>
@@ -224,8 +218,8 @@
                     <div class="acc-body" id="body-${d.id}">
                         <b>Paddock:</b> ${d.paddocks.map(p => `${p.name}(${p.luas})`).join(", ")}<br>
                         <b>HK:</b> ${d.hk} | <b>Bahan:</b> ${d.bahans.join(", ") || "-"}<br>
-                        <b>Ready:</b> ${d.jln} | <b>Breakdown:</b> ${d.rsk} | <b>Standby:</b> ${d.std}<br>
-                        <button onclick="tarikKeForm('${d.id}')" style="background:orange; color:white; border:none; padding:5px 10px; border-radius:4px; margin-top:5px;">Edit</button>
+                        <b>Alat:</b> ${d.unit || "-"} | <b>Ready:</b> ${d.jln} | <b>Breakdown:</b> ${d.rsk}<br>
+                        <button onclick="tarikKeForm('${d.id}')" style="background:orange; color:white; border:none; padding:5px 12px; border-radius:4px; margin-top:5px; font-weight:bold;">EDIT</button>
                         <button onclick="hapusItem('${d.id}')" style="background:none; border:none; color:red; margin-left:15px;">Hapus</button>
                     </div>
                 </div>`;
@@ -241,7 +235,7 @@
     }
 
     function tarikKeForm(id) {
-        db.collection("reports_v8").doc(id).get().then(doc => {
+        db.collection("reports_v9").doc(id).get().then(doc => {
             const d = doc.data();
             document.getElementById('editId').value = id;
             document.getElementById('kegiatan').value = d.kegiatan;
@@ -260,24 +254,29 @@
         });
     }
 
-    async function hapusItem(id) { if(confirm("Hapus?")) await db.collection("reports_v8").doc(id).delete(); }
-    async function hapusSemua() { if(confirm("Hapus semua data hari ini?")) { const q = await db.collection("reports_v8").where("tgl", "==", document.getElementById('tglLaporan').value).get(); q.forEach(doc => doc.ref.delete()); } }
+    async function hapusItem(id) { if(confirm("Hapus?")) await db.collection("reports_v9").doc(id).delete(); }
+
+    async function hapusSemua() {
+        if(confirm("Hapus semua data hari ini?")) {
+            const tgl = document.getElementById('tglLaporan').value;
+            const q = await db.collection("reports_v9").where("tgl", "==", tgl).get();
+            q.forEach(doc => doc.ref.delete());
+        }
+    }
 
     async function copyPlanningToHasil() {
-        const q = await db.collection("reports_v8").where("tgl", "==", document.getElementById('tglLaporan').value).where("type", "==", "Planning").get();
-        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; db.collection("reports_v8").add(d); });
+        const q = await db.collection("reports_v9").where("tgl", "==", document.getElementById('tglLaporan').value).where("type", "==", "Planning").get();
+        q.forEach(doc => { let d = doc.data(); d.type = "Hasil"; db.collection("reports_v9").add(d); });
         switchTab('Hasil');
     }
 
-    // Fungsi salin WA yang mengikuti urutan Drag & Drop di layar
     function salinWA() {
         const tgl = document.getElementById('tglLaporan').value;
+        const currentUrl = window.location.href;
         let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${tgl}\n_Daily Work Plan_\n--------------------------\n`;
         let totalHK_Semua = 0;
 
-        // Ambil urutan dari elemen HTML yang sudah di-drag
         const sortedItems = document.querySelectorAll('.acc-item');
-        
         sortedItems.forEach((el, i) => {
             const hk = parseInt(el.getAttribute('data-hk'));
             const pdks = JSON.parse(el.getAttribute('data-pdk'));
@@ -295,15 +294,16 @@
         });
 
         text += `\n--------------------------\n`;
-        text += `*Total seluruh HK : ${totalHK_Semua}*\n`;
+        text += `*Total seluruh HK : ${totalHK_Semua}*\n\n`;
+        text += `🔗 *Link Edit:* ${currentUrl}`;
         
         navigator.clipboard.writeText(text);
-        alert("Laporan disalin sesuai urutan yang Bapak susun!");
+        alert("Laporan & Link Edit Berhasil Disalin!");
     }
 
     function downloadCSV() {
         const tgl = document.getElementById('tglLaporan').value;
-        db.collection("reports_v8").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(q => {
+        db.collection("reports_v9").where("tgl", "==", tgl).where("type", "==", currentTab).get().then(q => {
             let csv = "Kegiatan,Total Ha,HK,Unit,Keterangan\n";
             q.forEach(doc => {
                 const d = doc.data();
