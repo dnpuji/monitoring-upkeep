@@ -119,6 +119,9 @@
         <button class="btn-action" style="background:#22c55e" onclick="salinWA()">🟢 SALIN WA</button>
         <button class="btn-action" style="background:#64748b" onclick="copyPlanningToHasil()">🔄 KE HASIL</button>
         <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">📂 CSV BACKUP</button>
+        <button onclick="syncKeSpreadsheet()" style="background: var(--warning); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+    🔄 Sinkron ke Spreadsheet
+</button>
     </div>
     <div id="displayList"></div>
 </div>
@@ -360,73 +363,21 @@
     }
 
     async function simpanData(isUpdate) {
-        const tgl = document.getElementById('tglLaporan').value;
-        const paddocks = Array.from(document.querySelectorAll('.paddock-item')).map(el => ({
-            name: el.querySelector('.p-name').value, 
-            luas: parseFloat(el.querySelector('.p-luas').value) || 0
-        })).filter(p => p.name !== "");
-        
-        const bahans = Array.from(document.querySelectorAll('.bahan-item')).map(el => ({
-            name: el.querySelector('.b-name').value,
-            dosis: parseFloat(el.querySelector('.b-dosis').value) || 0,
-            satuan: el.querySelector('.b-satuan').value,
-            // Kita ambil angka saja untuk dikirim ke Spreadsheet
-            total: parseFloat(el.querySelector('.b-total').value) || 0 
-        })).filter(b => b.name !== "");
-
-        const payload = {
-            tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
-            paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
-            unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
-            rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
-            ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        // ... (ambil nilai tgl, paddocks, bahans, payload tetap sama seperti sebelumnya) ...
 
         if(!payload.kegiatan) return alert("Pilih Kegiatan!");
 
         try {
-            // 1. Simpan ke Firebase
+            // HANYA SIMPAN KE FIREBASE
             if(isUpdate) {
                 await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
             } else {
                 await db.collection("reports_v13").add(payload);
             }
 
-            // 2. SIAPKAN DATA UNTUK PIPEDREAM (Format Flat untuk Pivot Table)
-            const rowsToInsert = [];
-            const listBahan = payload.bahans.length > 0 ? payload.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
-
-            // Loop untuk memecah data menjadi per baris
-            payload.paddocks.forEach(pdk => {
-                listBahan.forEach(b => {
-                    let satDasar = b.satuan.replace(/\/Ha/gi, "").trim(); 
-                    let angkaTotal = parseFloat(b.total) || 0;
-
-                    rowsToInsert.push([
-                        payload.tgl, payload.type, payload.kegiatan,
-                        pdk.name, pdk.luas, payload.hk, payload.unit,
-                        payload.jln, payload.rsk, payload.std,
-                        b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, payload.ket
-                    ]);
-                });
-            });
-
-            // 3. KIRIM KE PIPEDREAM
-            const pipedreamURL = 'https://eom472exw7rrgtv.m.pipedream.net'; // URL Pipedream kamu sudah saya masukkan
-            
-            fetch(pipedreamURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // Kita kirim data yang sudah jadi baris (array of arrays)
-                body: JSON.stringify({ rows: rowsToInsert }) 
-            })
-            .then(response => console.log("Berhasil dikirim ke Pipedream"))
-            .catch(error => console.error("Error Pipedream:", error));
-
-            alert("Data Tersimpan ke Firebase & Sedang dikirim ke Spreadsheet!");
+            alert("Data tersimpan ke Firebase! (Jangan lupa klik Sinkron ke Spreadsheet jika sudah valid)");
             clearForm();
-            
-        } catch (error) { // <--- INI BAGIAN YANG SEBELUMNYA HILANG
+        } catch (error) {
             console.error("Error simpan data:", error);
             alert("Gagal menyimpan data.");
         }
@@ -608,7 +559,74 @@
         alert("Gagal menyalin teks.");
     }
 }
+async function syncKeSpreadsheet() {
+        const tgl = document.getElementById('tglLaporan').value;
+        const btn = event.target;
+        
+        if (!confirm(`Apakah Anda yakin data tanggal ${tgl} sudah benar dan ingin dikirim ke Spreadsheet?`)) return;
 
+        btn.innerText = "⏳ Sedang Sinkron...";
+        btn.disabled = true;
+
+        try {
+            // 1. Ambil SEMUA data di tanggal dan tipe (opsional) tersebut dari Firebase
+            const snap = await db.collection("reports_v13")
+                .where("tgl", "==", tgl)
+                // .where("type", "==", currentTab) // Buka komen ini jika ingin sinkron per tab (Planning/Actual) saja
+                .get();
+
+            if (snap.empty) {
+                alert("Tidak ada data di tanggal ini untuk disinkron.");
+                btn.innerText = "🔄 Sinkron ke Spreadsheet";
+                btn.disabled = false;
+                return;
+            }
+
+            const rowsToInsert = [];
+
+            // 2. Format menjadi baris (Flat Data)
+            snap.forEach(doc => {
+                const d = doc.data();
+                const docId = doc.id;
+                const listBahan = d.bahans.length > 0 ? d.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
+
+                d.paddocks.forEach(pdk => {
+                    listBahan.forEach(b => {
+                        let satDasar = b.satuan.replace(/\/Ha/gi, "").trim(); 
+                        let angkaTotal = parseFloat(b.total) || 0;
+
+                        rowsToInsert.push([
+                            docId, d.tgl, d.type, d.kegiatan,
+                            pdk.name, pdk.luas, d.hk, d.unit,
+                            d.jln, d.rsk, d.std,
+                            b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, d.ket
+                        ]);
+                    });
+                });
+            });
+
+            // 3. Kirim ke Google Apps Script
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwXeafZzK8gSMvbmJfVw3Z6Gv0ehw_FZpWR5QAxzrODB-4KBfuMY3HHKC9awBDKfp2abQ/exec'; 
+            await fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: "sync_date", // Tanda untuk Apps Script
+                    targetDate: tgl,
+                    rows: rowsToInsert 
+                }) 
+            });
+
+            alert("Sinkronisasi Berhasil!");
+        } catch (error) {
+            console.error("Error Sync:", error);
+            alert("Gagal melakukan sinkronisasi.");
+        } finally {
+            btn.innerText = "🔄 Sinkron ke Spreadsheet";
+            btn.disabled = false;
+        }
+    }
     async function copyPlanningToHasil() {
         const tgl = document.getElementById('tglLaporan').value;
         const q = await db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", "Planning").get();
