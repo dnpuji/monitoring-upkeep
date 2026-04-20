@@ -119,7 +119,7 @@
         <button class="btn-action" style="background:#22c55e" onclick="salinWA()">🟢 SALIN WA</button>
         <button class="btn-action" style="background:#64748b" onclick="copyPlanningToHasil()">🔄 KE HASIL</button>
         <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">📂 CSV BACKUP</button>
-        <button onclick="syncKeSpreadsheet()" style="background: var(--warning); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+        <button onclick="syncKeSpreadsheet(this)" style="background: var(--warning); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
     🔄 Sinkron ke Spreadsheet
 </button>
     </div>
@@ -363,7 +363,26 @@
     }
 
     async function simpanData(isUpdate) {
-        // ... (ambil nilai tgl, paddocks, bahans, payload tetap sama seperti sebelumnya) ...
+        const tgl = document.getElementById('tglLaporan').value;
+        const paddocks = Array.from(document.querySelectorAll('.paddock-item')).map(el => ({
+            name: el.querySelector('.p-name').value, 
+            luas: parseFloat(el.querySelector('.p-luas').value) || 0
+        })).filter(p => p.name !== "");
+        
+        const bahans = Array.from(document.querySelectorAll('.bahan-item')).map(el => ({
+            name: el.querySelector('.b-name').value,
+            dosis: parseFloat(el.querySelector('.b-dosis').value) || 0,
+            satuan: el.querySelector('.b-satuan').value,
+            total: parseFloat(el.querySelector('.b-total').value) || 0 
+        })).filter(b => b.name !== "");
+
+        const payload = {
+            tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
+            paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
+            unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
+            rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
+            ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
         if(!payload.kegiatan) return alert("Pilih Kegiatan!");
 
@@ -375,7 +394,7 @@
                 await db.collection("reports_v13").add(payload);
             }
 
-            alert("Data tersimpan ke Firebase! (Jangan lupa klik Sinkron ke Spreadsheet jika sudah valid)");
+            alert("Data Tersimpan ke Database Internal! (Klik Sinkron jika sudah valid)");
             clearForm();
         } catch (error) {
             console.error("Error simpan data:", error);
@@ -559,40 +578,38 @@
         alert("Gagal menyalin teks.");
     }
 }
-async function syncKeSpreadsheet() {
+async function syncKeSpreadsheet(btn) {
         const tgl = document.getElementById('tglLaporan').value;
-        const btn = event.target;
         
-        if (!confirm(`Apakah Anda yakin data tanggal ${tgl} sudah benar dan ingin dikirim ke Spreadsheet?`)) return;
+        if (!confirm(`Apakah Anda yakin ingin mengirim semua data tanggal ${tgl} ke Pipedream?`)) return;
 
-        btn.innerText = "⏳ Sedang Sinkron...";
+        // Ubah tampilan tombol saat loading
+        const teksLama = btn.innerText;
+        btn.innerText = "⏳ Sedang Mengirim...";
         btn.disabled = true;
 
         try {
-            // 1. Ambil SEMUA data di tanggal dan tipe (opsional) tersebut dari Firebase
-            const snap = await db.collection("reports_v13")
-                .where("tgl", "==", tgl)
-                // .where("type", "==", currentTab) // Buka komen ini jika ingin sinkron per tab (Planning/Actual) saja
-                .get();
+            // 1. Ambil data dari Firebase berdasarkan tanggal
+            const snap = await db.collection("reports_v13").where("tgl", "==", tgl).get();
 
             if (snap.empty) {
-                alert("Tidak ada data di tanggal ini untuk disinkron.");
-                btn.innerText = "🔄 Sinkron ke Spreadsheet";
+                alert("Tidak ada data di tanggal ini.");
+                btn.innerText = teksLama;
                 btn.disabled = false;
                 return;
             }
 
             const rowsToInsert = [];
 
-            // 2. Format menjadi baris (Flat Data)
+            // 2. Format data menjadi baris (Flat Data untuk Pivot)
             snap.forEach(doc => {
                 const d = doc.data();
-                const docId = doc.id;
-                const listBahan = d.bahans.length > 0 ? d.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
+                const docId = doc.id; // Menyertakan ID Firebase
+                const listBahan = (d.bahans && d.bahans.length > 0) ? d.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
 
                 d.paddocks.forEach(pdk => {
                     listBahan.forEach(b => {
-                        let satDasar = b.satuan.replace(/\/Ha/gi, "").trim(); 
+                        let satDasar = b.satuan ? b.satuan.replace(/\/Ha/gi, "").trim() : "-"; 
                         let angkaTotal = parseFloat(b.total) || 0;
 
                         rowsToInsert.push([
@@ -605,25 +622,27 @@ async function syncKeSpreadsheet() {
                 });
             });
 
-            // 3. Kirim ke Google Apps Script
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbxKW5c2o5TMWdIt2YbQBLwzYGoiafOWPW_Fs_COolBL35k0BYIItbmp78PYI-5OIiTStA/exec'; 
-            await fetch(scriptURL, {
+            // 3. Kirim ke Pipedream
+            const pipedreamURL = 'https://eom472exw7rrgtv.m.pipedream.net'; // URL Pipedream kamu sebelumnya
+            
+            const response = await fetch(pipedreamURL, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: "sync_date", // Tanda untuk Apps Script
-                    targetDate: tgl,
-                    rows: rowsToInsert 
-                }) 
+                body: JSON.stringify({ rows: rowsToInsert }) 
             });
 
-            alert("Sinkronisasi Berhasil!");
+            if(response.ok) {
+                alert("Sinkronisasi Berhasil! Cek Pipedream/Spreadsheet Anda.");
+            } else {
+                throw new Error("Gagal respons dari server.");
+            }
+
         } catch (error) {
-            console.error("Error Sync:", error);
-            alert("Gagal melakukan sinkronisasi.");
+            console.error("Error Sync Pipedream:", error);
+            alert("Gagal melakukan sinkronisasi ke Pipedream. Cek koneksi internet.");
         } finally {
-            btn.innerText = "🔄 Sinkron ke Spreadsheet";
+            // Kembalikan tombol seperti semula
+            btn.innerText = teksLama;
             btn.disabled = false;
         }
     }
