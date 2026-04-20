@@ -122,7 +122,13 @@
         <button onclick="syncKeSpreadsheet(this)" style="background: var(--warning); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
     🔄 Sinkron ke Spreadsheet
 </button>
-    </div>
+        <div style="display: inline-flex; gap: 10px; align-items: center; background: #e2e8f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
+    <span style="font-weight: bold; font-size: 13px;">Tarik Data Dari:</span>
+    <input type="date" id="tglSumberCopy" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+    <button onclick="copyDataDariTanggal()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+        ⬇️ Salin ke Tanggal Aktif
+    </button>
+</div>
     <div id="displayList"></div>
 </div>
 
@@ -644,6 +650,59 @@ async function syncKeSpreadsheet(btn) {
             // Kembalikan tombol seperti semula
             btn.innerText = teksLama;
             btn.disabled = false;
+        }
+    }
+    async function copyDataDariTanggal() {
+        const targetDate = document.getElementById('tglLaporan').value; // Tanggal Laporan (Tujuan)
+        const sourceDate = document.getElementById('tglSumberCopy').value; // Tanggal Sumber
+        
+        if (!targetDate) return alert("Pilih Tanggal Laporan di pojok kanan atas terlebih dahulu!");
+        if (!sourceDate) return alert("Pilih tanggal sumber data yang ingin ditarik!");
+        if (targetDate === sourceDate) return alert("Tanggal sumber dan tujuan tidak boleh sama!");
+
+        // Konfirmasi agar tidak tidak sengaja kepencet
+        if (!confirm(`Yakin ingin menyalin semua data ${currentTab.toUpperCase()} dari tanggal ${sourceDate} ke tanggal ${targetDate}?`)) return;
+
+        try {
+            // 1. Ambil data dari Firebase berdasarkan Tanggal Sumber
+            const snap = await db.collection("reports_v13")
+                .where("tgl", "==", sourceDate)
+                .where("type", "==", currentTab)
+                .get();
+
+            if (snap.empty) return alert(`Tidak ada data ${currentTab.toUpperCase()} di tanggal ${sourceDate} untuk disalin.`);
+
+            // 2. Siapkan Batch (Penyimpanan Masal yang cepat)
+            const batch = db.batch();
+            let count = 0;
+
+            snap.forEach(doc => {
+                const d = doc.data();
+                // Buat "Wadah" ID baru untuk dokumen hasil copy
+                const newDocRef = db.collection("reports_v13").doc(); 
+                
+                // 3. Gandakan data, tapi timpa/ubah tgl dan waktunya
+                const newData = {
+                    ...d,
+                    tgl: targetDate, // Ini kunci utamanya: Ubah ke tanggal tujuan
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                batch.set(newDocRef, newData);
+                count++;
+            });
+
+            // 4. Eksekusi penyimpanan
+            await batch.commit();
+            alert(`Berhasil menyalin ${count} data kegiatan!`);
+            
+            // 5. Refresh layar agar data barunya langsung muncul
+            // Jika kamu punya fungsi untuk load tabel (misal: loadTabel()), ganti location.reload() dengan fungsi tersebut.
+            location.reload(); 
+            
+        } catch (error) {
+            console.error("Error copy data:", error);
+            alert("Terjadi kesalahan saat menyalin data. Cek koneksi internet.");
         }
     }
     async function copyPlanningToHasil() {
