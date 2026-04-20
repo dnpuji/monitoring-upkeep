@@ -332,10 +332,11 @@
         try {
             let query;
             // Logika Tab
-            if (currentTab === 'histori') {
-                // Ambil 50 data terbaru tanpa filter tanggal
-                query = db.collection("reports_v13").orderBy("tgl", "desc").limit(50);
-            } else if (currentTab === 'dashboard' || currentTab === 'master') {
+            // Logika Tab
+           if (currentTab === 'Rekap') {
+            // Ambil 50 data terbaru tanpa filter tanggal
+            query = db.collection("reports_v13").orderBy("tgl", "desc").limit(50);
+            } else if (currentTab === 'Dashboard' || currentTab === 'Master') {
                 listDiv.innerHTML = `<div style="padding:40px; text-align:center; color:#64748b; background:white; border-radius:15px;">
                     <div style="font-size:40px; margin-bottom:10px;">🚧</div>
                     <b>Menu ${currentTab.toUpperCase()}</b><br>Sedang dalam pengembangan.
@@ -365,11 +366,11 @@
                                 <div style="font-size:11px; color:#64748b;">${currentTab === 'histori' ? '📅 ' + d.tgl + ' | ' : ''}📍 ${(d.paddocks || []).map(p => p.name).join(", ")}</div>
                             </div>
                             <div class="item-actions">
-                                <button onclick="editData('${doc.id}')" style="background:#f1f5f9; color:#475569">✏️</button>
-                                <button onclick="salinKeTanggalLain('${doc.id}')" style="background:#e0f2fe; color:#0369a1">📋</button>
-                                <button onclick="hapusData('${doc.id}')" style="background:#fee2e2; color:#b91c1c">🗑️</button>
-                            </div>
-                        </div>
+    <button onclick="tarikKeForm('${doc.id}')" style="background:#f1f5f9; color:#475569">✏️</button>
+    <button onclick="salinKeTanggalLain('${doc.id}')" style="background:#e0f2fe; color:#0369a1">📋</button>
+    <button onclick="hapusSatuKegiatan('${doc.id}')" style="background:#fee2e2; color:#b91c1c">🗑️</button>
+    </div>
+        </div>
                         
                         <div class="grid-3">
                             <div class="stat-box"><strong>${sumL.toFixed(2)}</strong><br>Ha</div>
@@ -665,9 +666,10 @@ rowsToInsert.push([
     pdk.name, pdk.luas, d.hk, d.unit,
     d.jln, d.rsk, d.std,
     b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, d.ket
-]);
+           ]);
         });
     });
+});
 
             // 3. Kirim ke Pipedream
             const pipedreamURL = 'https://eom472exw7rrgtv.m.pipedream.net'; // URL Pipedream kamu sebelumnya
