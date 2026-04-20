@@ -360,31 +360,55 @@
     }
 
     async function simpanData(isUpdate) {
-        const tgl = document.getElementById('tglLaporan').value;
-        const paddocks = Array.from(document.querySelectorAll('.paddock-item')).map(el => ({
-            name: el.querySelector('.p-name').value, 
-            luas: parseFloat(el.querySelector('.p-luas').value) || 0
-        })).filter(p => p.name !== "");
-        
-        const bahans = Array.from(document.querySelectorAll('.bahan-item')).map(el => ({
-            name: el.querySelector('.b-name').value,
-            dosis: parseFloat(el.querySelector('.b-dosis').value) || 0,
-            satuan: el.querySelector('.b-satuan').value,
-            total: el.querySelector('.b-total').value
-        })).filter(b => b.name !== "");
+    const tgl = document.getElementById('tglLaporan').value;
+    const paddocks = Array.from(document.querySelectorAll('.paddock-item')).map(el => ({
+        name: el.querySelector('.p-name').value, 
+        luas: parseFloat(el.querySelector('.p-luas').value) || 0
+    })).filter(p => p.name !== "");
+    
+    const bahans = Array.from(document.querySelectorAll('.bahan-item')).map(el => ({
+        name: el.querySelector('.b-name').value,
+        dosis: parseFloat(el.querySelector('.b-dosis').value) || 0,
+        satuan: el.querySelector('.b-satuan').value,
+        // Kita ambil angka saja untuk dikirim ke Spreadsheet
+        total: parseFloat(el.querySelector('.b-total').value) || 0 
+    })).filter(b => b.name !== "");
 
-        const payload = {
-            tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
-            paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
-            unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
-            rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
-            ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        if(!payload.kegiatan) return alert("Pilih Kegiatan!");
-        if(isUpdate) await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
-        else await db.collection("reports_v13").add(payload);
+    const payload = {
+        tgl, type: currentTab, kegiatan: document.getElementById('kegiatan').value,
+        paddocks, bahans, hk: parseInt(document.getElementById('hk').value) || 0,
+        unit: document.getElementById('unit').value, jln: parseInt(document.getElementById('jln').value) || 0,
+        rsk: parseInt(document.getElementById('rsk').value) || 0, std: parseInt(document.getElementById('std').value) || 0,
+        ket: document.getElementById('ket').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if(!payload.kegiatan) return alert("Pilih Kegiatan!");
+
+    try {
+        // 1. Simpan ke Firebase
+        if(isUpdate) {
+            await db.collection("reports_v13").doc(document.getElementById('editId').value).update(payload);
+        } else {
+            await db.collection("reports_v13").add(payload);
+        }
+
+        // 2. KIRIM KE SPREADSHEET (Tambahkan Bagian Ini)
+        const scriptURL = 'MASUKKAN_URL_WEB_APP_SCRIPT_DISINI';
+        fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors', // Penting untuk Apps Script
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        alert("Data Tersimpan ke Firebase & Spreadsheet!");
         clearForm();
+    } catch (error) {
+        console.error("Error simpan data:", error);
+        alert("Gagal menyimpan data.");
     }
+}
 
     function clearForm() {
         document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
