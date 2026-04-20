@@ -378,7 +378,7 @@
 
                         <div style="margin-top:10px; padding:8px; background:#f8fafc; border-radius:8px; font-size:11px;">
                             <strong>🧪 Bahan:</strong><br>
-                            ${d.bahans.map(b => `- ${b.name}: ${b.dosis} ${b.satuan}/Ha (Tot: ${b.total})`).join("<br>") || "-"}
+                            ${d.bahans.map(b => `- ${b.name}: ${b.dosis} ${(b.satuan || '').replace(/\/Ha/gi, '').trim()}/Ha (Tot: ${b.total})`).join("<br>") || "-"}
                         </div>
                     </div>
                 `;
@@ -635,19 +635,21 @@ async function syncKeSpreadsheet(btn) {
                 const listBahan = (d.bahans && d.bahans.length > 0) ? d.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
 
                 d.paddocks.forEach(pdk => {
-                    listBahan.forEach(b => {
-                        let satDasar = b.satuan ? b.satuan.replace(/\/Ha/gi, "").trim() : "-"; 
-                        let angkaTotal = parseFloat(b.total) || 0;
+        listBahan.forEach(b => {
+            // 1. Kita "potong" dulu /Ha bawaannya (jika ada) agar bersih
+            let satDasar = b.satuan ? b.satuan.replace(/\/Ha/gi, "").trim() : "-"; 
+            let angkaTotal = parseFloat(b.total) || 0;
 
-                        rowsToInsert.push([
-                            docId, d.tgl, d.type, d.kegiatan,
-                            pdk.name, pdk.luas, d.hk, d.unit,
-                            d.jln, d.rsk, d.std,
-                            b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, d.ket
-                        ]);
-                    });
-                });
-            });
+            rowsToInsert.push([
+                docId, d.tgl, d.type, d.kegiatan,
+                pdk.name, pdk.luas, d.hk, d.unit,
+                d.jln, d.rsk, d.std,
+                
+                // 2. Di sini WAJIB gunakan satDasar + "/Ha", JANGAN b.satuan + "/Ha"
+                b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, d.ket
+            ]);
+        });
+    });
 
             // 3. Kirim ke Pipedream
             const pipedreamURL = 'https://eom472exw7rrgtv.m.pipedream.net'; // URL Pipedream kamu sebelumnya
