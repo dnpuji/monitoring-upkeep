@@ -122,17 +122,7 @@
     </div> <button onclick="syncKeSpreadsheet(this)" style="background: var(--warning); color: white; border: none; width: 100%; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         🔄 Sinkron ke Spreadsheet
     </button>
-    
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-        <span style="font-weight: 600; color: #475569;">🔄 Salin Kegiatan:</span>
-        <input type="date" id="tglSumberCopy" style="padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none;">
-        <button onclick="cariKegiatanCopy()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">🔍 Cari</button>
-        
-        <select id="pilihKegiatanCopy" style="padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none; flex: 1; min-width: 150px;">
-            <option value="">-- Hasil Pencarian --</option>
-        </select>
-        
-        <button onclick="eksekusiSalin()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">⬇️ Salin ke Tgl Aktif</button>
+
     </div>
 
     <div id="displayList"></div>
@@ -333,20 +323,34 @@
         else if (direction === 'down' && item.nextElementSibling) item.parentNode.insertBefore(item.nextElementSibling, item);
     }
 
-    function loadData() {
+    async function loadData() {
         const tgl = document.getElementById('tglLaporan').value;
-        db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab).onSnapshot(snap => {
-            let listHtml = ""; let totalHK = 0; const items = []; 
-            snap.forEach(doc => items.push({id: doc.id, ...doc.data()}));
-            items.sort((a,b) => (a.updatedAt?.seconds || 0) - (b.updatedAt?.seconds || 0));
-            
-            items.forEach(d => {
-                totalHK += (d.hk || 0); 
-                const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
-                
-                // Compatibility untuk data bahan lama (string) dan baru (object)
-                const bahanList = d.bahans.map(b => typeof b === 'object' ? `${b.name} (${b.total})` : b).join(", ");
+        const listDiv = document.getElementById('displayList');
+        listDiv.innerHTML = "⏳ Memuat data...";
 
+        let query;
+        if (currentTab === 'histori') {
+            // KHUSUS HISTORI: Ambil semua data tanpa filter tanggal, urutkan dari yang terbaru
+            query = db.collection("reports_v13").orderBy("tgl", "desc").limit(50);
+        } else if (currentTab === 'dashboard' || currentTab === 'master') {
+            listDiv.innerHTML = `<div style="padding:20px; text-align:center; color:#64748b">Menu ${currentTab.toUpperCase()} sedang dalam pengembangan.</div>`;
+            return;
+        } else {
+            // Tab Planning & Actual: Filter berdasarkan tanggal
+            query = db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab);
+        }
+
+        // ... sisa kode render data kamu dibawahnya ...
+    }
+// Cari bagian ini di kode JS kamu (biasanya bagian yang membentuk tampilan tabel/kartu)
+// Tambahkan tombol 📋 salin ke tanggal lain
+html += `
+    <div class="item-actions">
+        <button onclick="editData('${doc.id}')" style="background:#f1f5f9; color:#475569">✏️</button>
+        <button onclick="salinKeTanggalLain('${doc.id}')" style="background:#e0f2fe; color:#0369a1">📋</button>
+        <button onclick="hapusData('${doc.id}')" style="background:#fee2e2; color:#b91c1c">🗑️</button>
+    </div>
+`;
                 listHtml += `<div class="acc-item" data-id="${d.id}">
                     <div class="acc-main-row">
                         <div class="acc-header" onclick="toggleAcc('${d.id}')">📝 ${d.kegiatan} (${sumL.toFixed(2)} Ha)</div>
@@ -661,76 +665,33 @@ async function syncKeSpreadsheet(btn) {
     let dataSumberCopy = [];
 
     // Fungsi 1: Mencari kegiatan di tanggal sumber
-    async function cariKegiatanCopy() {
-        const sourceDate = document.getElementById('tglSumberCopy').value;
-        const selectBox = document.getElementById('pilihKegiatanCopy');
-        
-        if (!sourceDate) return alert("Pilih tanggal sumber terlebih dahulu!");
-        
-        selectBox.innerHTML = '<option value="">⏳ Mencari data...</option>';
-        dataSumberCopy = []; // Reset data
-        
+    async function salinKeTanggalLain(docId) {
+        // Ambil data asli dari Firebase
         try {
-            const snap = await db.collection("reports_v13")
-                .where("tgl", "==", sourceDate)
-                .where("type", "==", currentTab)
-                .get();
-
-            if (snap.empty) {
-                selectBox.innerHTML = '<option value="">❌ Tidak ada kegiatan</option>';
-                return;
-            }
-
-            selectBox.innerHTML = '<option value="">-- Pilih Kegiatan --</option>';
-            snap.forEach(doc => {
-                const d = doc.data();
-                dataSumberCopy.push({ id: doc.id, ...d });
-                
-                // Menampilkan Nama Kegiatan + Paddock agar mudah dibedakan
-                const listPdk = d.paddocks.map(p => p.name).join(", ");
-                const optText = `${d.kegiatan} (${listPdk})`;
-                
-                const opt = document.createElement('option');
-                opt.value = doc.id;
-                opt.innerText = optText;
-                selectBox.appendChild(opt);
-            });
+            const doc = await db.collection("reports_v13").doc(docId).get();
+            if (!doc.exists) return alert("Data tidak ditemukan!");
             
-        } catch (error) {
-            console.error("Error cari data:", error);
-            selectBox.innerHTML = '<option value="">⚠️ Gagal memuat data</option>';
-        }
-    }
-
-    // Fungsi 2: Menyalin kegiatan yang dipilih ke tanggal laporan
-    async function eksekusiSalin() {
-        const targetDate = document.getElementById('tglLaporan').value;
-        const docId = document.getElementById('pilihKegiatanCopy').value;
-        
-        if (!targetDate) return alert("Pilih Tanggal Laporan di pojok kanan atas!");
-        if (!docId) return alert("Silakan cari dan pilih kegiatan yang ingin disalin dari dropdown!");
-
-        // Cari data lengkapnya dari variabel sementara
-        const dataToCopy = dataSumberCopy.find(d => d.id === docId);
-        if (!dataToCopy) return alert("Data tidak ditemukan.");
-
-        if (targetDate === dataToCopy.tgl) return alert("Tanggal tujuan tidak boleh sama dengan tanggal sumber!");
-
-        if (!confirm(`Yakin ingin menyalin kegiatan "${dataToCopy.kegiatan}" ke tanggal ${targetDate}?`)) return;
-
-        try {
-            // Pisahkan ID lama, kita hanya butuh isi datanya saja
-            const { id, ...newData } = dataToCopy;
+            const data = doc.data();
             
-            // Ubah tanggal menjadi tanggal tujuan
-            newData.tgl = targetDate;
-            newData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+            // Tanya tanggal tujuan
+            const tglTujuan = prompt("Salin kegiatan ini ke tanggal berapa?", document.getElementById('tglLaporan').value);
+            
+            if (!tglTujuan) return; // Batal jika user klik cancel
 
-            // Simpan sebagai data baru di Firebase
+            // Buat data baru (copy)
+            const newData = {
+                ...data,
+                tgl: tglTujuan,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
             await db.collection("reports_v13").add(newData);
+            alert(`Kegiatan "${data.kegiatan}" berhasil disalin ke tanggal ${tglTujuan}`);
             
-            alert("Berhasil menyalin kegiatan! Data akan dimuat ulang.");
-            location.reload(); 
+            // Jika tanggal tujuan adalah tanggal yang sedang dibuka, refresh layar
+            if (tglTujuan === document.getElementById('tglLaporan').value) {
+                location.reload();
+            }
         } catch (error) {
             console.error("Error salin:", error);
             alert("Gagal menyalin data.");
