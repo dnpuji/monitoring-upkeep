@@ -656,57 +656,83 @@ async function syncKeSpreadsheet(btn) {
             btn.disabled = false;
         }
     }
-    async function copyDataDariTanggal() {
-        const targetDate = document.getElementById('tglLaporan').value; // Tanggal Laporan (Tujuan)
-        const sourceDate = document.getElementById('tglSumberCopy').value; // Tanggal Sumber
+    // Variabel global untuk menyimpan data sementara
+    let dataSumberCopy = [];
+
+    // Fungsi 1: Mencari kegiatan di tanggal sumber
+    async function cariKegiatanCopy() {
+        const sourceDate = document.getElementById('tglSumberCopy').value;
+        const selectBox = document.getElementById('pilihKegiatanCopy');
         
-        if (!targetDate) return alert("Pilih Tanggal Laporan di pojok kanan atas terlebih dahulu!");
-        if (!sourceDate) return alert("Pilih tanggal sumber data yang ingin ditarik!");
-        if (targetDate === sourceDate) return alert("Tanggal sumber dan tujuan tidak boleh sama!");
-
-        // Konfirmasi agar tidak tidak sengaja kepencet
-        if (!confirm(`Yakin ingin menyalin semua data ${currentTab.toUpperCase()} dari tanggal ${sourceDate} ke tanggal ${targetDate}?`)) return;
-
+        if (!sourceDate) return alert("Pilih tanggal sumber terlebih dahulu!");
+        
+        selectBox.innerHTML = '<option value="">⏳ Mencari data...</option>';
+        dataSumberCopy = []; // Reset data
+        
         try {
-            // 1. Ambil data dari Firebase berdasarkan Tanggal Sumber
             const snap = await db.collection("reports_v13")
                 .where("tgl", "==", sourceDate)
                 .where("type", "==", currentTab)
                 .get();
 
-            if (snap.empty) return alert(`Tidak ada data ${currentTab.toUpperCase()} di tanggal ${sourceDate} untuk disalin.`);
+            if (snap.empty) {
+                selectBox.innerHTML = '<option value="">❌ Tidak ada kegiatan</option>';
+                return;
+            }
 
-            // 2. Siapkan Batch (Penyimpanan Masal yang cepat)
-            const batch = db.batch();
-            let count = 0;
-
+            selectBox.innerHTML = '<option value="">-- Pilih Kegiatan --</option>';
             snap.forEach(doc => {
                 const d = doc.data();
-                // Buat "Wadah" ID baru untuk dokumen hasil copy
-                const newDocRef = db.collection("reports_v13").doc(); 
+                dataSumberCopy.push({ id: doc.id, ...d });
                 
-                // 3. Gandakan data, tapi timpa/ubah tgl dan waktunya
-                const newData = {
-                    ...d,
-                    tgl: targetDate, // Ini kunci utamanya: Ubah ke tanggal tujuan
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
+                // Menampilkan Nama Kegiatan + Paddock agar mudah dibedakan
+                const listPdk = d.paddocks.map(p => p.name).join(", ");
+                const optText = `${d.kegiatan} (${listPdk})`;
                 
-                batch.set(newDocRef, newData);
-                count++;
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.innerText = optText;
+                selectBox.appendChild(opt);
             });
-
-            // 4. Eksekusi penyimpanan
-            await batch.commit();
-            alert(`Berhasil menyalin ${count} data kegiatan!`);
-            
-            // 5. Refresh layar agar data barunya langsung muncul
-            // Jika kamu punya fungsi untuk load tabel (misal: loadTabel()), ganti location.reload() dengan fungsi tersebut.
-            location.reload(); 
             
         } catch (error) {
-            console.error("Error copy data:", error);
-            alert("Terjadi kesalahan saat menyalin data. Cek koneksi internet.");
+            console.error("Error cari data:", error);
+            selectBox.innerHTML = '<option value="">⚠️ Gagal memuat data</option>';
+        }
+    }
+
+    // Fungsi 2: Menyalin kegiatan yang dipilih ke tanggal laporan
+    async function eksekusiSalin() {
+        const targetDate = document.getElementById('tglLaporan').value;
+        const docId = document.getElementById('pilihKegiatanCopy').value;
+        
+        if (!targetDate) return alert("Pilih Tanggal Laporan di pojok kanan atas!");
+        if (!docId) return alert("Silakan cari dan pilih kegiatan yang ingin disalin dari dropdown!");
+
+        // Cari data lengkapnya dari variabel sementara
+        const dataToCopy = dataSumberCopy.find(d => d.id === docId);
+        if (!dataToCopy) return alert("Data tidak ditemukan.");
+
+        if (targetDate === dataToCopy.tgl) return alert("Tanggal tujuan tidak boleh sama dengan tanggal sumber!");
+
+        if (!confirm(`Yakin ingin menyalin kegiatan "${dataToCopy.kegiatan}" ke tanggal ${targetDate}?`)) return;
+
+        try {
+            // Pisahkan ID lama, kita hanya butuh isi datanya saja
+            const { id, ...newData } = dataToCopy;
+            
+            // Ubah tanggal menjadi tanggal tujuan
+            newData.tgl = targetDate;
+            newData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+
+            // Simpan sebagai data baru di Firebase
+            await db.collection("reports_v13").add(newData);
+            
+            alert("Berhasil menyalin kegiatan! Data akan dimuat ulang.");
+            location.reload(); 
+        } catch (error) {
+            console.error("Error salin:", error);
+            alert("Gagal menyalin data.");
         }
     }
     async function copyPlanningToHasil() {
