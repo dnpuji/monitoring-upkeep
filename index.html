@@ -119,22 +119,23 @@
         <button class="btn-action" style="background:#22c55e" onclick="salinWA()">🟢 SALIN WA</button>
         <button class="btn-action" style="background:#64748b" onclick="copyPlanningToHasil()">🔄 KE HASIL</button>
         <button class="btn-action" style="background:#007bff" onclick="downloadCSV()">📂 CSV BACKUP</button>
-        <button onclick="syncKeSpreadsheet(this)" style="background: var(--warning); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
-    🔄 Sinkron ke Spreadsheet
-</button>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 15px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-    <span style="font-weight: 600; color: #475569;">🔄 Salin Kegiatan:</span>
-    <input type="date" id="tglSumberCopy" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none;">
-    <button onclick="cariKegiatanCopy()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s;">🔍 Cari</button>
+    </div> <button onclick="syncKeSpreadsheet(this)" style="background: var(--warning); color: white; border: none; width: 100%; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        🔄 Sinkron ke Spreadsheet
+    </button>
     
-    <select id="pilihKegiatanCopy" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none; min-width: 150px; max-width: 250px;">
-        <option value="">-- Hasil Pencarian --</option>
-    </select>
-    
-    <button onclick="eksekusiSalin()" style="background: var(--primary); color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s;">⬇️ Salin ke Tgl Aktif</button>
-</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span style="font-weight: 600; color: #475569;">🔄 Salin Kegiatan:</span>
+        <input type="date" id="tglSumberCopy" style="padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none;">
+        <button onclick="cariKegiatanCopy()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">🔍 Cari</button>
+        
+        <select id="pilihKegiatanCopy" style="padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none; flex: 1; min-width: 150px;">
+            <option value="">-- Hasil Pencarian --</option>
+        </select>
+        
+        <button onclick="eksekusiSalin()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">⬇️ Salin ke Tgl Aktif</button>
+    </div>
+
     <div id="displayList"></div>
-</div>
 
 <div id="viewDashboard" style="display:none;">
     <div class="card" style="text-align:center; margin-bottom: 10px;">
