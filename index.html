@@ -392,24 +392,42 @@
             await db.collection("reports_v13").add(payload);
         }
 
-        // 2. KIRIM KE SPREADSHEET (Tambahkan Bagian Ini)
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbw4x-Rv7GL3jLxR_SSx-AuKZmuMjU8exQkFqhDK7MBbq7IQY7C2HTS6o_dNkLFeIXwZiQ/exec';
-        fetch(scriptURL, {
-            method: 'POST',
-            mode: 'no-cors', // Penting untuk Apps Script
-            cache: 'no-cache',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        // ... (Kode simpan ke Firebase di atasnya tetap sama) ...
+
+        // 2. SIAPKAN DATA UNTUK PIPEDREAM (Format Flat untuk Pivot Table)
+        const rowsToInsert = [];
+        const listBahan = payload.bahans.length > 0 ? payload.bahans : [{name: "-", dosis: 0, satuan: "-", total: 0}];
+
+        // Loop untuk memecah data menjadi per baris
+        payload.paddocks.forEach(pdk => {
+            listBahan.forEach(b => {
+                let satDasar = b.satuan.replace(/\/Ha/gi, "").trim(); 
+                let angkaTotal = parseFloat(b.total) || 0;
+
+                rowsToInsert.push([
+                    payload.tgl, payload.type, payload.kegiatan,
+                    pdk.name, pdk.luas, payload.hk, payload.unit,
+                    payload.jln, payload.rsk, payload.std,
+                    b.name, b.dosis, satDasar + "/Ha", angkaTotal, satDasar, payload.ket
+                ]);
+            });
         });
 
-        alert("Data Tersimpan ke Firebase & Spreadsheet!");
-        clearForm();
-    } catch (error) {
-        console.error("Error simpan data:", error);
-        alert("Gagal menyimpan data.");
-    }
-}
+        // 3. KIRIM KE PIPEDREAM
+        const pipedreamURL = 'https://eom472exw7rrgtv.m.pipedream.net'; // Paste URL Pipedream kamu di sini
+        
+        fetch(pipedreamURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Kita kirim data yang sudah jadi baris (array of arrays)
+            body: JSON.stringify({ rows: rowsToInsert }) 
+        })
+        .then(response => console.log("Berhasil dikirim ke Pipedream"))
+        .catch(error => console.error("Error Pipedream:", error));
 
+        alert("Data Tersimpan ke Firebase & Sedang dikirim ke Spreadsheet!");
+        clearForm();
+        
     function clearForm() {
         document.getElementById('editId').value = ""; document.getElementById('kegiatan').value = "";
         document.getElementById('hk').value = ""; document.getElementById('unit').value = "";
