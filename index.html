@@ -525,18 +525,23 @@
         const d = doc.data();
         const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
         totalHK_Semua += (d.hk || 0);
-
-                // Format: Nama Bahan: Dosis/Ha (Tot: Nilai Satuan)
+        
+                // Format Bahan yang diperbaiki
         const bahanList = d.bahans.map(b => {
             if (typeof b === 'object') {
-                // Kita bersihkan dulu b.total dari satuan lama agar tidak double
-                // Mengambil angka saja dari b.total
-                const angkaTotal = parseFloat(b.total) || 0; 
+                // 1. Bersihkan satuan dari "/Ha" agar kita punya satuan dasar (L, Kg, Gram)
+                // Ini mencegah "L/Ha/Ha"
+                let satuanDasar = b.satuan.replace(/\/Ha/gi, "").trim();
                 
-                return `${b.name}: ${b.dosis} ${b.satuan}/Ha (Tot: ${angkaTotal.toFixed(2)} ${b.satuan})`;
+                // 2. Ambil angka saja dari total (mencegah teks double di Total)
+                let angkaTotal = parseFloat(b.total) || 0;
+                
+                // 3. Susun format: Dosis (SatuanDasar/Ha) dan Total (SatuanDasar saja)
+                return `${b.name}: ${b.dosis} ${satuanDasar}/Ha (Tot: ${angkaTotal.toFixed(2)} ${satuanDasar})`;
             }
             return b; 
         }).join("\n   - ");
+
 
         text += `\n*${index}. ${d.kegiatan.toUpperCase()} (${sumL.toFixed(2)} Ha)*\n`;
         text += `📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}\n`;
