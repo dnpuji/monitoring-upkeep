@@ -66,6 +66,8 @@
 </div>
 
 <div id="viewMain">
+    <div id="displayList"></div> 
+</div>
     <div class="card" style="text-align:center;">
         <input type="date" id="tglLaporan" onchange="loadData()" style="font-weight:bold; color:var(--primary); border:none; font-size:16px; text-align:center;">
     </div>
@@ -243,19 +245,36 @@
         const [y, m, d] = isoDate.split("-"); return `${d}/${m}/${y}`;
     }
 
-    function switchTab(t) {
-        currentTab = t;
-        document.querySelectorAll('.tab-menu button').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab'+t).classList.add('active');
-        
-        document.getElementById('viewMain').style.display = (t === 'Planning' || t === 'Hasil') ? 'block' : 'none';
-        document.getElementById('viewDashboard').style.display = (t === 'Dashboard') ? 'block' : 'none';
-        document.getElementById('viewRekap').style.display = (t === 'Rekap') ? 'block' : 'none';
-        document.getElementById('viewMaster').style.display = (t === 'Master') ? 'block' : 'none';
-        
-        if(t === 'Planning' || t === 'Hasil') { document.getElementById('formTitle').innerText = "Input " + t; loadData(); }
-        if(t === 'Dashboard') { document.getElementById('tglDashboard').value = document.getElementById('tglLaporan').value; renderDashboard(); }
+    function switchTab(tabName) {
+    currentTab = tabName; // Update variabel global
+
+    // 1. Atur tombol aktif secara visual
+    document.querySelectorAll('.tab-menu button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tab' + tabName).classList.add('active');
+
+    // 2. Sembunyikan SEMUA kontainer view terlebih dahulu
+    document.getElementById('viewMain').style.display = 'none';
+    document.getElementById('viewDashboard').style.display = 'none';
+    document.getElementById('viewRekap').style.display = 'none';
+    document.getElementById('viewMaster').style.display = 'none';
+
+    // 3. Tampilkan hanya view yang dipilih
+    if (tabName === 'Planning' || tabName === 'Hasil') {
+        document.getElementById('viewMain').style.display = 'block';
+        document.getElementById('formTitle').innerText = "Input " + tabName;
+    } else if (tabName === 'Dashboard') {
+        document.getElementById('viewDashboard').style.display = 'block';
+        renderDashboard(); // Jalankan fungsi dashboard
+    } else if (tabName === 'Rekap') {
+        document.getElementById('viewRekap').style.display = 'block';
+    } else if (tabName === 'Master') {
+        document.getElementById('viewMaster').style.display = 'block';
+        loadMaster(); // Jalankan fungsi master
     }
+
+    // 4. Refresh data list
+    loadData();
+}
 
     // DINAMIS FORM (PADDOCK & BAHAN)
     function updateBahanOptions(selectElement, selectedValue = "") {
@@ -340,11 +359,11 @@
             if (currentTab === 'Rekap') {
                 query = db.collection("reports_v13").orderBy("tgl", "desc").limit(50);
             } else if (currentTab === 'Dashboard' || currentTab === 'Master') {
-                listDiv.innerHTML = `<div style="padding:40px; text-align:center; color:#64748b; background:white; border-radius:15px;">
-                    <div style="font-size:40px; margin-bottom:10px;">🚧</div>
-                    <b>Menu ${currentTab.toUpperCase()}</b><br>Sedang dalam pengembangan.
-                </div>`;
-                return;
+        // TAMBAHKAN BARIS INI:
+        listDiv.innerHTML = ""; 
+        
+        listDiv.innerHTML = `<div style="padding:40px; text-align:center; ..."> ... </div>`;
+        return;
             } else {
                 query = db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab);
             }
