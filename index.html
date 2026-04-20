@@ -508,20 +508,52 @@
     function toggleAcc(id) { const b = document.getElementById('body-'+id); b.style.display = (b.style.display === 'block') ? 'none' : 'block'; }
     async function hapusSatuKegiatan(id) { if(confirm("Hapus kegiatan ini?")) await db.collection("reports_v13").doc(id).delete(); }
 
-    function salinWA() {
-        const tgl = document.getElementById('tglLaporan').value;
-        const items = document.querySelectorAll('.acc-item');
-        if(items.length === 0) return alert("Data kosong.");
-        let totalHK_Semua = 0; let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${formatTglIndo(tgl)}\n--------------------------\n`;
-        items.forEach((el, i) => {
-            const header = el.querySelector('.acc-header').innerText;
-            const body = el.querySelector('.acc-body').innerText.split("EDIT")[0].trim();
-            const hkMatch = body.match(/HK: (\d+)/); if(hkMatch) totalHK_Semua += parseInt(hkMatch[1]);
-            text += `\n*${i+1}. ${header.toUpperCase()}*\n${body}\n`;
-        });
-        text += `\n--------------------------\n*TOTAL HK: ${totalHK_Semua} 👷*\n\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
-        navigator.clipboard.writeText(text); alert("Laporan WA Disalin!");
+    async function salinWA() {
+    const tgl = document.getElementById('tglLaporan').value;
+    const snap = await db.collection("reports_v13")
+        .where("tgl", "==", tgl)
+        .where("type", "==", currentTab)
+        .get();
+
+    if (snap.empty) return alert("Data kosong.");
+
+    let totalHK_Semua = 0;
+    let text = `*LAPORAN DAILY ${currentTab.toUpperCase()}*\n📅 *Tanggal:* ${formatTglIndo(tgl)}\n--------------------------\n`;
+
+    let index = 1;
+    snap.forEach(doc => {
+        const d = doc.data();
+        const sumL = d.paddocks.reduce((a, b) => a + (parseFloat(b.luas) || 0), 0);
+        totalHK_Semua += (d.hk || 0);
+
+        // Penyesuaian format satuan Bahan
+        const bahanList = d.bahans.map(b => {
+            if (typeof b === 'object') {
+                // Dosis pakai /Ha, Total pakai satuannya saja
+                return `${b.name}: ${b.dosis} ${b.satuan}/Ha (Tot: ${b.total} ${b.satuan})`;
+            }
+            return b;
+        }).join("\n   - ");
+
+        text += `\n*${index}. ${d.kegiatan.toUpperCase()} (${sumL.toFixed(2)} Ha)*\n`;
+        text += `📍 Pdk: ${d.paddocks.map(p => `${p.name} (${p.luas} Ha)`).join(", ")}\n`;
+        text += `👷 HK: ${d.hk} | 🚜 Alat: ${d.unit || "-"}\n`;
+        text += `⚙️ Stat: 🟢${d.jln} | 🔴${d.rsk} | 🟡${d.std}\n`;
+        text += `🧪 Bahan:\n   - ${bahanList || "-"}\n`;
+        text += `ℹ️ Ket: ${d.ket || "-"}\n`;
+        
+        index++;
+    });
+
+    text += `\n--------------------------\n*TOTAL HK: ${totalHK_Semua} 👷*\n\n*Link Monitoring:* ${window.location.href.split('#')[0]}`;
+
+    try {
+        await navigator.clipboard.writeText(text);
+        alert("Laporan WA Berhasil Disalin!");
+    } catch (err) {
+        alert("Gagal menyalin teks.");
     }
+}
 
     async function copyPlanningToHasil() {
         const tgl = document.getElementById('tglLaporan').value;
