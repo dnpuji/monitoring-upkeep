@@ -243,19 +243,38 @@
         const [y, m, d] = isoDate.split("-"); return `${d}/${m}/${y}`;
     }
 
-    function switchTab(t) {
-        currentTab = t;
-        document.querySelectorAll('.tab-menu button').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab'+t).classList.add('active');
+    function switchTab(tab) {
+    currentTab = tab;
+    
+    // 1. Sembunyikan semua container halaman
+    document.getElementById('viewMain').style.display = 'none';
+    document.getElementById('viewDashboard').style.display = 'none';
+    document.getElementById('viewHistory').style.display = 'none';
+    // document.getElementById('viewMaster').style.display = 'none'; // Jika ada menu master
+    
+    // 🔴 TAMBAHKAN BARIS INI: Paksa hasil input (displayList) agar tersembunyi
+    const listData = document.getElementById('displayList');
+    if (listData) listData.style.display = 'none';
+
+    // 2. Logika untuk menampilkan halaman sesuai tab yang dipilih
+    if (tab === 'Planning' || tab === 'Hasil') {
+        document.getElementById('viewMain').style.display = 'block';
         
-        document.getElementById('viewMain').style.display = (t === 'Planning' || t === 'Hasil') ? 'block' : 'none';
-        document.getElementById('viewDashboard').style.display = (t === 'Dashboard') ? 'block' : 'none';
-        document.getElementById('viewRekap').style.display = (t === 'Rekap') ? 'block' : 'none';
-        document.getElementById('viewMaster').style.display = (t === 'Master') ? 'block' : 'none';
+        // 🟢 TAMBAHKAN BARIS INI: Tampilkan kembali hasil input hanya di Planning & Hasil
+        if (listData) listData.style.display = 'block';
         
-        if(t === 'Planning' || t === 'Hasil') { document.getElementById('formTitle').innerText = "Input " + t; loadData(); }
-        if(t === 'Dashboard') { document.getElementById('tglDashboard').value = document.getElementById('tglLaporan').value; renderDashboard(); }
+        loadData(); // Muat data kegiatan
+    } 
+    else if (tab === 'Dashboard') {
+        document.getElementById('viewDashboard').style.display = 'block';
+        // renderDashboard();
+    } 
+    else if (tab === 'History') {
+        document.getElementById('viewHistory').style.display = 'block';
+        // loadHistory();
     }
+    // else if (tab === 'Master') { ... }
+}
 
     // DINAMIS FORM (PADDOCK & BAHAN)
     function updateBahanOptions(selectElement, selectedValue = "") {
