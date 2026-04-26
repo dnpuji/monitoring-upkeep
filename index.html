@@ -329,27 +329,20 @@
     }
 
 // --- FUNGSI LOAD DATA (Tampilan Layar & Histori) ---
+    // --- FUNGSI LOAD DATA (Tampilan Layar & Histori) ---
     async function loadData() {
+        // Cegah fungsi ini berjalan jika bukan berada di tab Planning atau Hasil
+        if (currentTab !== 'Planning' && currentTab !== 'Hasil') return;
+
         const tgl = document.getElementById('tglLaporan').value;
         const listDiv = document.getElementById('displayList');
         listDiv.innerHTML = '<div style="text-align:center; padding:20px;">⏳ Memuat data...</div>';
 
         try {
-            let query;
-            // 1. Perbaikan Logika Tab: Gunakan 'Rekap' (huruf besar) sesuai variabel currentTab
-            if (currentTab === 'Rekap') {
-                query = db.collection("reports_v13").orderBy("tgl", "desc").limit(50);
-            } else if (currentTab === 'Dashboard' || currentTab === 'Master') {
-                listDiv.innerHTML = `<div style="padding:40px; text-align:center; color:#64748b; background:white; border-radius:15px;">
-                    <div style="font-size:40px; margin-bottom:10px;">🚧</div>
-                    <b>Menu ${currentTab.toUpperCase()}</b><br>Sedang dalam pengembangan.
-                </div>`;
-                return;
-            } else {
-                query = db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab);
-            }
-
+            // Langsung query berdasarkan tanggal dan tab saat ini
+            const query = db.collection("reports_v13").where("tgl", "==", tgl).where("type", "==", currentTab);
             const snap = await query.get();
+            
             if (snap.empty) {
                 listDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8; background:white; border-radius:15px;">🚫 Tidak ada data ditemukan.</div>';
                 return;
@@ -366,7 +359,7 @@
                             <div>
                                 <div style="font-weight:bold; color:var(--primary); font-size:14px;">${d.kegiatan.toUpperCase()}</div>
                                 <div style="font-size:11px; color:#64748b;">
-                                    ${currentTab === 'Rekap' ? '📅 ' + d.tgl + ' | ' : ''}📍 ${(d.paddocks || []).map(p => p.name).join(", ")}
+                                    📍 ${(d.paddocks || []).map(p => p.name).join(", ")}
                                 </div>
                             </div>
                             <div class="item-actions">
@@ -385,14 +378,8 @@
                         <div style="margin-top:10px; padding:8px; background:#f8fafc; border-radius:8px; font-size:11px;">
                             <strong>🧪 Bahan:</strong><br>
                             ${(d.bahans || []).map(b => {
-                                // --- PERBAIKAN DI SINI ---
-                                // 1. Ambil satuan dasar (buang /Ha)
                                 let sClean = (b.satuan || '').replace(/\/Ha/gi, '').trim();
-                                
-                                // 2. Ambil hanya angka dari b.total (mengantisipasi data lama yang ada teksnya)
                                 let angkaTotal = parseFloat(b.total) || 0;
-
-                                // 3. Tampilkan: Dosis pakai /Ha, Total pakai satuan dasar saja
                                 return `- ${b.name}: ${b.dosis} ${sClean}/Ha (Tot: ${angkaTotal} ${sClean})`;
                             }).join("<br>") || "-"}
                         </div>
